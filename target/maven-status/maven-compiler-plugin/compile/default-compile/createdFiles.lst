@@ -1,0 +1,15 @@
+com\moneytransfer\scheduled\ScheduledPayment.class
+com\moneytransfer\audit\AuditLog.class
+com\moneytransfer\transaction\Transaction.class
+com\moneytransfer\account\AccountStatus.class
+com\moneytransfer\beneficiary\Beneficiary.class
+com\moneytransfer\user\UserTier.class
+com\moneytransfer\account\Account.class
+com\moneytransfer\transaction\TransactionStatus.class
+com\moneytransfer\scheduled\PaymentFrequency.class
+com\moneytransfer\MoneyTransferApplication.class
+com\moneytransfer\otp\OtpCode.class
+com\moneytransfer\scheduled\PaymentStatus.class
+com\moneytransfer\transaction\TransactionType.class
+com\moneytransfer\user\User.class
+com\moneytransfer\otp\OtpType.class
