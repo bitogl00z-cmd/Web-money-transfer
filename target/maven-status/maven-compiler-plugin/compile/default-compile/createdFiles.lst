@@ -8,6 +8,7 @@ com\moneytransfer\transaction\TransactionService.class
 com\moneytransfer\account\AccountService.class
 com\moneytransfer\account\Account.class
 com\moneytransfer\admin\AdminController.class
+com\moneytransfer\WebController.class
 com\moneytransfer\user\User.class
 com\moneytransfer\export\ExportService.class
 com\moneytransfer\transaction\TransactionController.class

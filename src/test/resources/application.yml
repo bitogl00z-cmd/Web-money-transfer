@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  thymeleaf:
+    cache: false
+  mail:
+    host: localhost
+    port: 2525
+    username:
+    password:
+app:
+  jwt:
+    secret: dGVzdC1zZWNyZXQta2V5LWZvci1tb25leS10cmFuc2Zlci1hcHBsaWNhdGlvbi0yMDI2
+    access-token-expiration: 900000
+    refresh-token-expiration: 604800000
+  storage:
+    endpoint: http://localhost:9000
+    access-key: test
+    secret-key: test
+    bucket: test-bucket
+  face:
+    max-image-size: 400
+    thread-pool-size: 2
+    similarity-threshold: 0.7
+  checksum:
+    secret-key: test-checksum-secret-key
+logging:
+  level:
+    com.moneytransfer: WARN
+    org.springframework: WARN

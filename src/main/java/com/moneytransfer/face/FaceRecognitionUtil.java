@@ -11,7 +11,7 @@ public class FaceRecognitionUtil {
     private final CascadeClassifier faceDetector;
     private final int maxImageSize;
 
-    static { System.loadLibrary(Core.NATIVE_LIBRARY_NAME); }
+    static { nu.pattern.OpenCV.loadLocally(); }
 
     public FaceRecognitionUtil(@Value("${app.face.max-image-size:400}") int maxImageSize) {
         this.maxImageSize = maxImageSize;

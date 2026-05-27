@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Profile - Money Transfer</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-gray-100">
+<nav class="bg-blue-600 text-white p-4 shadow-lg"><div class="container mx-auto flex justify-between"><span class="text-xl font-bold">MoneyTransfer</span><div class="space-x-4">
+<a href="/dashboard" class="hover:underline">Dashboard</a><a href="/transfer" class="hover:underline">Transfer</a><a href="/history" class="hover:underline">History</a><a href="/beneficiaries" class="hover:underline">Beneficiaries</a><a href="/scheduled" class="hover:underline">Scheduled</a><a href="/profile" class="underline font-bold">Profile</a><a href="/logout" class="hover:underline">Logout</a>
+</div></div></nav>
+<div class="container mx-auto p-4"><div class="bg-white p-6 rounded-lg shadow max-w-md mx-auto">
+<h1 class="text-2xl font-bold mb-4">Profile</h1>
+<div id="profileData"></div>
+</div></div>
+<script>
+fetch('/api/users/profile',{credentials:'include'}).then(r=>r.json()).then(u=>{document.getElementById('profileData').innerHTML='<p><strong>Username:</strong> '+u.username+'</p><p><strong>Name:</strong> '+u.fullName+'</p><p><strong>Email:</strong> '+u.email+'</p><p><strong>Phone:</strong> '+(u.phone||'N/A')+'</p><p><strong>Tier:</strong> '+u.tier+'</p>';});
+</script>
+</body>
+</html>

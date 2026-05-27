@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head><meta charset="UTF-8"><title>Admin Users - Money Transfer</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-gray-100">
+<nav class="bg-blue-600 text-white p-4 shadow-lg"><div class="container mx-auto flex justify-between"><span class="text-xl font-bold">MoneyTransfer</span><div class="space-x-4">
+<a href="/dashboard" class="hover:underline">Dashboard</a><a href="/transfer" class="hover:underline">Transfer</a><a href="/history" class="hover:underline">History</a><a href="/profile" class="hover:underline">Profile</a><a href="/admin/users" class="underline font-bold">Users</a><a href="/admin/transactions" class="hover:underline">Transactions</a><a href="/logout" class="hover:underline">Logout</a>
+</div></div></nav>
+<div class="container mx-auto p-4"><h1 class="text-2xl font-bold mb-4">Admin - User Management</h1>
+<div class="bg-white p-6 rounded-lg shadow"><table class="w-full"><thead><tr class="border-b"><th class="text-left p-2">ID</th><th class="text-left p-2">Username</th><th class="text-left p-2">Name</th><th class="text-left p-2">Email</th><th class="text-left p-2">Role</th><th class="text-left p-2">Status</th><th class="text-left p-2">Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+</div>
+<script>
+fetch('/api/admin/users',{credentials:'include'}).then(r=>r.json()).then(data=>{const body=document.getElementById('usersBody');data.forEach(u=>{const row=body.insertRow();row.innerHTML='<td class="p-2">'+u.id+'</td><td class="p-2">'+u.username+'</td><td class="p-2">'+u.fullName+'</td><td class="p-2">'+u.email+'</td><td class="p-2">'+u.role+'</td><td class="p-2">'+u.status+'</td><td class="p-2">'+(u.status!=='LOCKED'?'<button onclick="lockUser('+u.id+')" class="text-red-600 hover:underline">Lock</button>':'<button onclick="unlockUser('+u.id+')" class="text-green-600 hover:underline">Unlock</button>')+'</td>';});});
+function lockUser(id){fetch('/api/admin/users/'+id+'/lock',{method:'POST',credentials:'include'}).then(()=>location.reload());}
+function unlockUser(id){fetch('/api/admin/users/'+id+'/unlock',{method:'POST',credentials:'include'}).then(()=>location.reload());}
+</script>
+</body>
+</html>

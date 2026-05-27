@@ -56,5 +56,6 @@ C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\beneficiary\Benef
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\dashboard\DashboardController.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\scheduled\ScheduledPayment.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\otp\OtpController.java
+C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\WebController.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\audit\Auditable.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\auth\LoginRequest.java
