@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 @Service
@@ -28,6 +29,10 @@ public class ScheduledPaymentService {
         this.accountRepository = accountRepository;
         this.accountService = accountService;
         this.transactionRepository = transactionRepository;
+    }
+
+    public Optional<ScheduledPayment> findById(Long id) {
+        return scheduledPaymentRepository.findById(id);
     }
 
     @Transactional

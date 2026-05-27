@@ -127,8 +127,11 @@ public class TransactionService {
         return tx;
     }
 
-    public Page<Transaction> getHistory(Long accountId, Pageable pageable) {
-        return transactionRepository.findByFromAccountIdOrToAccountIdOrderByCreatedAtDesc(accountId, accountId, pageable);
+    public Page<Transaction> getHistory(List<Long> accountIds, Pageable pageable) {
+        if (accountIds.isEmpty()) {
+            return Page.empty();
+        }
+        return transactionRepository.findByFromAccountIdInOrToAccountIdInOrderByCreatedAtDesc(accountIds, accountIds, pageable);
     }
 
     public List<Transaction> getHistoryBetween(Long accountId, LocalDateTime from, LocalDateTime to) {

@@ -1,5 +1,7 @@
 package com.moneytransfer.transaction;
 
+import com.moneytransfer.account.Account;
+import com.moneytransfer.account.AccountService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
@@ -9,15 +11,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/transactions")
 public class TransactionController {
     private final TransactionService transactionService;
+    private final AccountService accountService;
 
-    public TransactionController(TransactionService transactionService) {
+    public TransactionController(TransactionService transactionService, AccountService accountService) {
         this.transactionService = transactionService;
+        this.accountService = accountService;
     }
 
     @PostMapping("/transfer")
@@ -40,11 +46,16 @@ public class TransactionController {
 
     @PostMapping("/deposit")
     public ResponseEntity<?> deposit(@RequestBody Map<String, Object> body,
-                                      Authentication auth, HttpServletRequest request) {
+                                       Authentication auth, HttpServletRequest request) {
         try {
             Claims claims = (Claims) auth.getDetails();
             Long userId = ((Integer) claims.get("userId")).longValue();
             Long accountId = Long.valueOf(body.get("accountId").toString());
+            Account account = accountService.findById(accountId)
+                    .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+            if (!account.getUserId().equals(userId)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+            }
             BigDecimal amount = new BigDecimal(body.get("amount").toString());
             String ip = request.getRemoteAddr();
             Transaction tx = transactionService.deposit(accountId, amount, "Deposit", userId, ip);
@@ -61,6 +72,11 @@ public class TransactionController {
             Claims claims = (Claims) auth.getDetails();
             Long userId = ((Integer) claims.get("userId")).longValue();
             Long accountId = Long.valueOf(body.get("accountId").toString());
+            Account account = accountService.findById(accountId)
+                    .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+            if (!account.getUserId().equals(userId)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+            }
             BigDecimal amount = new BigDecimal(body.get("amount").toString());
             String ip = request.getRemoteAddr();
             Transaction tx = transactionService.withdraw(accountId, amount, "Withdrawal", userId, ip);
@@ -76,7 +92,9 @@ public class TransactionController {
                                          @RequestParam(defaultValue = "20") int size) {
         Claims claims = (Claims) auth.getDetails();
         Long userId = ((Integer) claims.get("userId")).longValue();
-        Page<Transaction> history = transactionService.getHistory(userId, PageRequest.of(page, size));
+        List<Account> accounts = accountService.getUserAccounts(userId);
+        List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
+        Page<Transaction> history = transactionService.getHistory(accountIds, PageRequest.of(page, size));
         return ResponseEntity.ok(history);
     }
 

@@ -26,14 +26,21 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getAccount(@PathVariable Long id) {
+    public ResponseEntity<?> getAccount(Authentication auth, @PathVariable Long id) {
+        Claims claims = (Claims) auth.getDetails();
+        Long userId = ((Integer) claims.get("userId")).longValue();
         return accountService.findById(id)
-                .map(account -> ResponseEntity.ok(Map.of(
-                        "id", account.getId(),
-                        "accountNumber", account.getAccountNumber(),
-                        "balance", account.getBalance(),
-                        "status", account.getStatus()
-                )))
+                .map(account -> {
+                    if (!account.getUserId().equals(userId)) {
+                        return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
+                    }
+                    return ResponseEntity.ok(Map.of(
+                            "id", account.getId(),
+                            "accountNumber", account.getAccountNumber(),
+                            "balance", account.getBalance(),
+                            "status", account.getStatus()
+                    ));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 }
