@@ -5,6 +5,7 @@ com\moneytransfer\transaction\TransactionRepository.class
 com\moneytransfer\account\AccountStatus.class
 com\moneytransfer\beneficiary\Beneficiary.class
 com\moneytransfer\auth\RegisterRequest.class
+com\moneytransfer\transaction\TransactionService.class
 com\moneytransfer\account\AccountService.class
 com\moneytransfer\account\Account.class
 com\moneytransfer\user\UserService.class
@@ -19,6 +20,7 @@ com\moneytransfer\user\User.class
 com\moneytransfer\account\AccountController.class
 com\moneytransfer\auth\LoginRequest.class
 com\moneytransfer\scheduled\ScheduledPayment.class
+com\moneytransfer\transaction\TransactionController.class
 com\moneytransfer\otp\OtpRepository.class
 com\moneytransfer\transaction\Transaction.class
 com\moneytransfer\beneficiary\BeneficiaryRepository.class
