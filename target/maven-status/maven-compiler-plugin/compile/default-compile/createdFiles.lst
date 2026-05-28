@@ -13,6 +13,7 @@ com\moneytransfer\user\User.class
 com\moneytransfer\export\ExportService.class
 com\moneytransfer\transaction\TransactionController.class
 com\moneytransfer\transaction\Transaction.class
+com\moneytransfer\admin\AdminTransactionDto.class
 com\moneytransfer\audit\Auditable.class
 com\moneytransfer\auth\JwtUtil.class
 com\moneytransfer\export\ExportController.class
@@ -24,6 +25,7 @@ com\moneytransfer\otp\OtpType.class
 com\moneytransfer\dashboard\DashboardService.class
 com\moneytransfer\qr\QrController.class
 com\moneytransfer\auth\AuthResponse.class
+com\moneytransfer\user\UserRole.class
 com\moneytransfer\config\RedisConfig.class
 com\moneytransfer\face\FaceController.class
 com\moneytransfer\scheduled\ScheduledPaymentService$1.class
@@ -45,6 +47,7 @@ com\moneytransfer\account\AccountController.class
 com\moneytransfer\auth\LoginRequest.class
 com\moneytransfer\admin\AdminService.class
 com\moneytransfer\beneficiary\BeneficiaryService.class
+com\moneytransfer\config\DataInitializer.class
 com\moneytransfer\scheduled\ScheduledPayment.class
 com\moneytransfer\face\FaceService.class
 com\moneytransfer\audit\AuditAspect.class
@@ -61,3 +64,4 @@ com\moneytransfer\auth\JwtAuthFilter.class
 com\moneytransfer\user\UserController.class
 com\moneytransfer\qr\QrService.class
 com\moneytransfer\user\UserRepository.class
+com\moneytransfer\user\UserDto.class

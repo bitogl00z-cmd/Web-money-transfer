@@ -32,6 +32,10 @@ public class User {
     private String faceImageUrl;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserRole role = UserRole.USER;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserTier tier = UserTier.STANDARD;
 
@@ -71,6 +75,8 @@ public class User {
     public void setPhone(String phone) { this.phone = phone; }
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
+    public UserRole getRole() { return role; }
+    public void setRole(UserRole role) { this.role = role; }
     public String getFaceEncoding() { return faceEncoding; }
     public void setFaceEncoding(String faceEncoding) { this.faceEncoding = faceEncoding; }
     public String getFaceImageUrl() { return faceImageUrl; }

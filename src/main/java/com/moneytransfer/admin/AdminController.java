@@ -1,7 +1,7 @@
 package com.moneytransfer.admin;
 
 import com.moneytransfer.audit.AuditLog;
-import com.moneytransfer.user.User;
+import com.moneytransfer.user.UserDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -19,21 +19,27 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public Page<User> getUsers(@RequestParam(defaultValue = "0") int page,
-                                @RequestParam(defaultValue = "20") int size) {
+    public Page<UserDto> getUsers(@RequestParam(defaultValue = "0") int page,
+                                   @RequestParam(defaultValue = "20") int size) {
         return adminService.getUsers(PageRequest.of(page, size));
     }
 
-    @PostMapping("/lock-user/{id}")
+    @PostMapping("/users/{id}/lock")
     public ResponseEntity<?> lockUser(@PathVariable Long id) {
         adminService.lockUser(id);
         return ResponseEntity.ok(Map.of("message", "User locked"));
     }
 
-    @PostMapping("/unlock-user/{id}")
+    @PostMapping("/users/{id}/unlock")
     public ResponseEntity<?> unlockUser(@PathVariable Long id) {
         adminService.unlockUser(id);
         return ResponseEntity.ok(Map.of("message", "User unlocked"));
+    }
+
+    @GetMapping("/transactions")
+    public Page<AdminTransactionDto> getTransactions(@RequestParam(defaultValue = "0") int page,
+                                                      @RequestParam(defaultValue = "20") int size) {
+        return adminService.getTransactions(PageRequest.of(page, size));
     }
 
     @GetMapping("/audit-logs")

@@ -13,4 +13,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             List<Long> fromAccountIds, List<Long> toAccountIds, Pageable pageable);
     List<Transaction> findByFromAccountIdOrToAccountIdAndCreatedAtBetween(
             Long fromAccountId, Long toAccountId, LocalDateTime from, LocalDateTime to);
+
+    Page<Transaction> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

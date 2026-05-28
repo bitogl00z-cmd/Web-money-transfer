@@ -51,8 +51,8 @@ public class AuthService {
         account.setBalance(BigDecimal.ZERO);
         accountRepository.save(account);
 
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername());
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getRole().name());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(), user.getRole().name());
 
         return new AuthResponse(accessToken, refreshToken, user.getId(), user.getUsername());
     }
@@ -77,8 +77,8 @@ public class AuthService {
 
         auditLogRepository.save(new AuditLog(user.getId(), "LOGIN", "Login successful", ipAddress));
 
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername());
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getRole().name());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(), user.getRole().name());
         return new AuthResponse(accessToken, refreshToken, user.getId(), user.getUsername());
     }
 
@@ -92,8 +92,9 @@ public class AuthService {
         var claims = jwtUtil.validateToken(refreshToken);
         long userId = ((Integer) claims.get("userId")).longValue();
         String username = claims.getSubject();
-        String newAccessToken = jwtUtil.generateAccessToken(userId, username);
-        String newRefreshToken = jwtUtil.generateRefreshToken(userId, username);
+        String role = claims.get("role", String.class);
+        String newAccessToken = jwtUtil.generateAccessToken(userId, username, role);
+        String newRefreshToken = jwtUtil.generateRefreshToken(userId, username, role);
         return new AuthResponse(newAccessToken, newRefreshToken, userId, username);
     }
 
