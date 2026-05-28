@@ -2,6 +2,7 @@ package com.moneytransfer.transaction;
 
 import com.moneytransfer.account.Account;
 import com.moneytransfer.account.AccountService;
+import com.moneytransfer.auth.JwtUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
@@ -21,9 +22,12 @@ public class TransactionController {
     private final TransactionService transactionService;
     private final AccountService accountService;
 
-    public TransactionController(TransactionService transactionService, AccountService accountService) {
+    private final JwtUtil jwtUtil;
+
+    public TransactionController(TransactionService transactionService, AccountService accountService, JwtUtil jwtUtil) {
         this.transactionService = transactionService;
         this.accountService = accountService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/transfer")
@@ -36,6 +40,29 @@ public class TransactionController {
             Long toId = Long.valueOf(body.get("toAccountId").toString());
             BigDecimal amount = new BigDecimal(body.get("amount").toString());
             String description = (String) body.getOrDefault("description", "");
+
+            // Face verification check for amounts > 10,000,000
+            BigDecimal threshold = new BigDecimal("10000000");
+            if (amount.compareTo(threshold) > 0) {
+                String faceToken = (String) body.get("faceToken");
+                if (faceToken == null || faceToken.isBlank()) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "Face verification required for amounts over 10,000,000₫",
+                        "faceRequired", true
+                    ));
+                }
+                try {
+                    Claims faceClaims = jwtUtil.validateToken(faceToken);
+                    Long faceUserId = ((Integer) faceClaims.get("userId")).longValue();
+                    String purpose = faceClaims.get("purpose", String.class);
+                    if (!faceUserId.equals(userId) || !"TRANSFER".equals(purpose)) {
+                        return ResponseEntity.badRequest().body(Map.of("error", "Invalid face verification token"));
+                    }
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Face verification token expired or invalid"));
+                }
+            }
+
             String ip = request.getRemoteAddr();
             Transaction tx = transactionService.transfer(fromId, toId, amount, description, userId, ip);
             return ResponseEntity.ok(Map.of("transactionCode", tx.getTransactionCode(), "status", tx.getStatus()));
