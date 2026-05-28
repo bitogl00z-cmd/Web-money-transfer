@@ -4,7 +4,11 @@ import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+
+import java.io.File;
+import java.io.IOException;
 
 @Component
 public class FaceRecognitionUtil {
@@ -15,8 +19,12 @@ public class FaceRecognitionUtil {
 
     public FaceRecognitionUtil(@Value("${app.face.max-image-size:400}") int maxImageSize) {
         this.maxImageSize = maxImageSize;
-        this.faceDetector = new CascadeClassifier(
-                "haarcascade_frontalface_default.xml");
+        try {
+            File cascadeFile = new ClassPathResource("haarcascade_frontalface_default.xml").getFile();
+            this.faceDetector = new CascadeClassifier(cascadeFile.getAbsolutePath());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load haarcascade_frontalface_default.xml from classpath", e);
+        }
     }
 
     public Mat resizeToMax(Mat src) {
