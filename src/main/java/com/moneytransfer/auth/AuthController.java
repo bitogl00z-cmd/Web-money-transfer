@@ -1,5 +1,11 @@
 package com.moneytransfer.auth;
 
+import com.moneytransfer.audit.AuditLog;
+import com.moneytransfer.audit.AuditLogRepository;
+import com.moneytransfer.face.FaceLoginRequest;
+import com.moneytransfer.face.FaceService;
+import com.moneytransfer.user.User;
+import com.moneytransfer.user.UserRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,10 +19,18 @@ import java.util.Map;
 public class AuthController {
     private final AuthService authService;
     private final JwtUtil jwtUtil;
+    private final FaceService faceService;
+    private final UserRepository userRepository;
+    private final AuditLogRepository auditLogRepository;
 
-    public AuthController(AuthService authService, JwtUtil jwtUtil) {
+    public AuthController(AuthService authService, JwtUtil jwtUtil,
+                          FaceService faceService, UserRepository userRepository,
+                          AuditLogRepository auditLogRepository) {
         this.authService = authService;
         this.jwtUtil = jwtUtil;
+        this.faceService = faceService;
+        this.userRepository = userRepository;
+        this.auditLogRepository = auditLogRepository;
     }
 
     @PostMapping("/register")
@@ -66,6 +80,44 @@ public class AuthController {
             return ResponseEntity.ok(Map.of("message", "Token refreshed"));
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", "Invalid refresh token"));
+        }
+    }
+
+    @PostMapping("/face-login")
+    public ResponseEntity<?> faceLogin(@RequestBody FaceLoginRequest request,
+                                        HttpServletRequest httpRequest,
+                                        HttpServletResponse response) {
+        try {
+            String ip = httpRequest.getRemoteAddr();
+            User user = userRepository.findByUsername(request.username())
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            if (user.isLocked()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Account is locked"));
+            }
+            if (!user.isFaceEnabled()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Face login not enabled. Register your face first."));
+            }
+            boolean matched = faceService.verifyFaceBase64Sync(user.getId(), request.faceImage());
+            if (!matched) {
+                user.setFailedAttempts(user.getFailedAttempts() + 1);
+                if (user.getFailedAttempts() >= 5) {
+                    user.setLocked(true);
+                }
+                userRepository.save(user);
+                return ResponseEntity.badRequest().body(Map.of("error", "Face verification failed"));
+            }
+            user.setFailedAttempts(0);
+            userRepository.save(user);
+
+            auditLogRepository.save(new AuditLog(user.getId(), "FACE_LOGIN", "Face login successful", ip));
+
+            String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getRole().name());
+            String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(), user.getRole().name());
+            authService.setAuthCookies(response, accessToken, refreshToken);
+
+            return ResponseEntity.ok(Map.of("message", "Face login successful", "userId", user.getId()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 

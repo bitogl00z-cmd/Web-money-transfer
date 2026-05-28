@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -101,5 +102,13 @@ public class FaceService {
                 throw new RuntimeException("Face verification failed", e);
             }
         }, faceExecutor);
+    }
+
+    public boolean verifyFaceBase64Sync(Long userId, String base64Image) {
+        try {
+            return verifyFaceBase64(userId, base64Image).get(15, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException("Face verification failed", e);
+        }
     }
 }
