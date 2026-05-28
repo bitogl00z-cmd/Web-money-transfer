@@ -1,97 +1,44 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Users - Money Transfer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-    <nav class="bg-gray-900 text-white p-4 shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
-            <span class="text-xl font-bold">💰 MoneyTransfer Admin</span>
-            <div class="space-x-6">
-                <a href="/dashboard" class="hover:text-blue-300 transition">Dashboard</a>
-                <a href="/admin/users" class="text-blue-400 font-bold border-b-2 border-blue-400">Users</a>
-                <a href="/admin/transactions" class="hover:text-blue-300 transition">Transactions</a>
-                <a href="/logout" class="text-red-300 hover:text-red-200 transition">Logout</a>
+<head th:replace="fragments/layout :: head('Quản trị')"></head>
+<body>
+    <nav th:replace="fragments/layout :: navbar('admin')"></nav>
+    <aside th:replace="fragments/layout :: sidebar('admin')"></aside>
+    <main class="main-content">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h1 class="page-title">👥 Quản lý người dùng</h1>
+                <p class="page-subtitle">Xem và quản lý tất cả người dùng hệ thống</p>
             </div>
+            <span class="badge badge-info" style="font-size:1rem;padding:8px 16px;" id="userCount">0 người dùng</span>
         </div>
-    </nav>
-
-    <div class="container mx-auto p-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">👥 User Management</h1>
-            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium" id="userCount">0 users</span>
+        <div class="card">
+            <div class="table-container">
+                <table class="table"><thead><tr><th>ID</th><th>Username</th><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="usersBody"></tbody></table>
+            </div>
+            <div id="loadingState" style="text-align:center;padding:40px;color:var(--text-muted);">Đang tải...</div>
         </div>
-
-        <div class="bg-white rounded-xl shadow overflow-hidden">
-            <table class="w-full">
-                <thead>
-                    <tr class="bg-gray-50 border-b">
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">ID</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Username</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Name</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Email</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Role</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Status</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="usersBody"></tbody>
-            </table>
-            <div id="loadingState" class="text-center p-8 text-gray-400">Loading users...</div>
-        </div>
-    </div>
-
+    </main>
+    <div th:replace="fragments/layout :: toast"></div>
+    <div th:replace="fragments/layout :: scripts"></div>
     <script>
-        fetch('/api/admin/users', { credentials: 'include' })
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('loadingState').classList.add('hidden');
-                const body = document.getElementById('usersBody');
-                const users = data.content || [];
-                document.getElementById('userCount').textContent = users.length + ' users';
-                users.forEach(u => {
-                    const row = body.insertRow();
-                    row.className = 'border-b hover:bg-gray-50 transition';
-                    const roleBadge = u.role === 'ADMIN'
-                        ? '<span class="bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs font-medium">ADMIN</span>'
-                        : '<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-medium">USER</span>';
-                    const statusBadge = u.status === 'LOCKED'
-                        ? '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-medium">LOCKED</span>'
-                        : '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-medium">ACTIVE</span>';
-                    const actionBtn = u.status !== 'LOCKED'
-                        ? '<button onclick="lockUser(' + u.id + ')" class="text-red-600 hover:text-red-800 text-sm font-medium">Lock</button>'
-                        : '<button onclick="unlockUser(' + u.id + ')" class="text-green-600 hover:text-green-800 text-sm font-medium">Unlock</button>';
-                    row.innerHTML = '<td class="p-4 text-gray-500 text-sm">' + u.id + '</td>'
-                        + '<td class="p-4 font-medium">' + u.username + '</td>'
-                        + '<td class="p-4 text-gray-700">' + u.fullName + '</td>'
-                        + '<td class="p-4 text-gray-500 text-sm">' + u.email + '</td>'
-                        + '<td class="p-4">' + roleBadge + '</td>'
-                        + '<td class="p-4">' + statusBadge + '</td>'
-                        + '<td class="p-4">' + actionBtn + '</td>';
+        fetch('/api/admin/users', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(data) {
+            document.getElementById('loadingState').style.display = 'none';
+            var body = document.getElementById('usersBody');
+            var users = data.content || [];
+            document.getElementById('userCount').textContent = users.length + ' người dùng';
+            if (users.length) {
+                users.forEach(function(u) {
+                    var row = body.insertRow();
+                    var roleBadge = u.role === 'ADMIN' ? '<span class="badge badge-purple">ADMIN</span>' : '<span class="badge badge-gray">USER</span>';
+                    var statusBadge = u.status === 'LOCKED' ? '<span class="badge badge-danger">KHÓA</span>' : '<span class="badge badge-success">HOẠT ĐỘNG</span>';
+                    var actionBtn = u.status !== 'LOCKED' ? '<button onclick="lockUser(' + u.id + ')" class="btn btn-danger btn-sm">Khóa</button>' : '<button onclick="unlockUser(' + u.id + ')" class="btn btn-success btn-sm">Mở khóa</button>';
+                    row.innerHTML = '<td style="color:var(--text-muted);font-size:0.85rem;">' + u.id + '</td><td style="font-weight:600;">' + u.username + '</td><td>' + u.fullName + '</td><td style="color:var(--text-muted);">' + u.email + '</td><td>' + roleBadge + '</td><td>' + statusBadge + '</td><td>' + actionBtn + '</td>';
                 });
-                if (users.length === 0) {
-                    body.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-400">No users found</td></tr>';
-                }
-            })
-            .catch(() => {
-                document.getElementById('loadingState').textContent = 'Failed to load users.';
-            });
-
-        function lockUser(id) {
-            if (confirm('Lock this user?')) {
-                fetch('/api/admin/users/' + id + '/lock', { method: 'POST', credentials: 'include' })
-                    .then(r => r.ok ? location.reload() : alert('Failed'));
-            }
-        }
-
-        function unlockUser(id) {
-            if (confirm('Unlock this user?')) {
-                fetch('/api/admin/users/' + id + '/unlock', { method: 'POST', credentials: 'include' })
-                    .then(r => r.ok ? location.reload() : alert('Failed'));
-            }
-        }
+            } else { body.innerHTML = '<tr><td colspan="7" class="empty">Không có người dùng</td></tr>'; }
+        }).catch(function() { document.getElementById('loadingState').textContent = 'Không thể tải dữ liệu.'; });
+        function lockUser(id) { if (confirm('Khóa người dùng này?')) { fetch('/api/admin/users/' + id + '/lock', { method: 'POST', credentials: 'include' }).then(function(r) { if (r.ok) location.reload(); }); } }
+        function unlockUser(id) { if (confirm('Mở khóa người dùng này?')) { fetch('/api/admin/users/' + id + '/unlock', { method: 'POST', credentials: 'include' }).then(function(r) { if (r.ok) location.reload(); }); } }
     </script>
 </body>
 </html>

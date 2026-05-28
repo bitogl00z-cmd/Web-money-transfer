@@ -1,16 +1,30 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Scheduled - Money Transfer</title><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-gray-100">
-<nav class="bg-blue-600 text-white p-4 shadow-lg"><div class="container mx-auto flex justify-between"><span class="text-xl font-bold">MoneyTransfer</span><div class="space-x-4">
-<a href="/dashboard" class="hover:underline">Dashboard</a><a href="/transfer" class="hover:underline">Transfer</a><a href="/history" class="hover:underline">History</a><a href="/beneficiaries" class="hover:underline">Beneficiaries</a><a href="/scheduled" class="underline font-bold">Scheduled</a><a href="/profile" class="hover:underline">Profile</a><a href="/logout" class="hover:underline">Logout</a>
-</div></div></nav>
-<div class="container mx-auto p-4"><h1 class="text-2xl font-bold mb-4">Scheduled Payments</h1>
-<div class="bg-white p-6 rounded-lg shadow"><table class="w-full"><thead><tr class="border-b"><th class="text-left p-2">To Account</th><th class="text-left p-2">Amount</th><th class="text-left p-2">Frequency</th><th class="text-left p-2">Next Run</th><th class="text-left p-2">Status</th><th class="text-left p-2">Actions</th></tr></thead><tbody id="paymentsBody"></tbody></table></div>
-</div>
-<script>
-fetch('/api/scheduled-payments',{credentials:'include'}).then(r=>r.json()).then(data=>{const body=document.getElementById('paymentsBody');data.forEach(p=>{const row=body.insertRow();row.innerHTML='<td class="p-2">'+p.toAccountNumber+'</td><td class="p-2">$'+p.amount+'</td><td class="p-2">'+p.frequency+'</td><td class="p-2">'+p.nextRun+'</td><td class="p-2">'+p.status+'</td><td class="p-2">'+(p.status==='ACTIVE'?'<button onclick="cancel('+p.id+')" class="text-red-600 hover:underline">Cancel</button>':'')+'</td>';});});
-function cancel(id){fetch('/api/scheduled-payments/'+id,{method:'DELETE',credentials:'include'}).then(()=>location.reload());}
-</script>
+<head th:replace="fragments/layout :: head('Định kỳ')"></head>
+<body>
+    <nav th:replace="fragments/layout :: navbar('scheduled')"></nav>
+    <aside th:replace="fragments/layout :: sidebar('scheduled')"></aside>
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">⏰ Thanh toán định kỳ</h1>
+            <p class="page-subtitle">Quản lý các giao dịch tự động</p>
+        </div>
+        <div class="card">
+            <div class="table-container">
+                <table class="table"><thead><tr><th>Đến tài khoản</th><th>Số tiền</th><th>Tần suất</th><th>Lần chạy tiếp</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="paymentsBody"></tbody></table>
+            </div>
+        </div>
+    </main>
+    <div th:replace="fragments/layout :: toast"></div>
+    <div th:replace="fragments/layout :: scripts"></div>
+    <script>
+        fetch('/api/scheduled-payments', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(data) {
+            var body = document.getElementById('paymentsBody');
+            if (data.length) {
+                data.forEach(function(p) { var row = body.insertRow(); row.innerHTML = '<td style="font-family:monospace;">' + p.toAccountNumber + '</td><td style="font-weight:600;">' + formatVND(p.amount) + '</td><td>' + p.frequency + '</td><td>' + p.nextRun + '</td><td><span class="badge ' + (p.status === 'ACTIVE' ? 'badge-success' : 'badge-gray') + '">' + p.status + '</span></td><td>' + (p.status === 'ACTIVE' ? '<button onclick="cancel(' + p.id + ')" class="btn btn-danger btn-sm">Hủy</button>' : '') + '</td>'; });
+            } else { body.innerHTML = '<tr><td colspan="6" class="empty">Chưa có thanh toán định kỳ</td></tr>'; }
+        });
+        function cancel(id) { fetch('/api/scheduled-payments/' + id, { method: 'DELETE', credentials: 'include' }).then(function() { location.reload(); }); }
+    </script>
 </body>
 </html>

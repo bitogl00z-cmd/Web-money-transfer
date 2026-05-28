@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} + ' - Ngân Hàng'">Banking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" th:href="@{/css/banking.css}">
+</head>
+
+<body th:fragment="navbar(currentPage)">
+    <nav class="navbar">
+        <button class="hamburger btn" onclick="toggleSidebar()" style="background:none;border:none;color:#fff;font-size:1.5rem;padding:4px 8px;margin-right:12px;">☰</button>
+        <div class="logo">
+            <span class="logo-icon">🏦</span>
+            <span>Ngân Hàng</span>
+        </div>
+        <div class="nav-right">
+            <a th:href="@{/profile}" class="nav-link" title="Hồ sơ">👤 <span th:text="${#authentication.name}">user</span></a>
+            <a th:href="@{/logout}" class="nav-link" style="color:rgba(255,255,255,0.7)">🚪 Đăng xuất</a>
+        </div>
+    </nav>
+</body>
+
+<div th:fragment="sidebar(currentPage)">
+    <aside class="sidebar">
+        <a th:href="@{/dashboard}" th:classappend="${currentPage == 'dashboard'} ? 'active'" class="sidebar-item">
+            <span class="icon">📊</span> Tổng quan
+        </a>
+        <a th:href="@{/transfer}" th:classappend="${currentPage == 'transfer'} ? 'active'" class="sidebar-item">
+            <span class="icon">💸</span> Chuyển tiền
+        </a>
+        <a th:href="@{/history}" th:classappend="${currentPage == 'history'} ? 'active'" class="sidebar-item">
+            <span class="icon">📋</span> Lịch sử
+        </a>
+        <a th:href="@{/beneficiaries}" th:classappend="${currentPage == 'beneficiaries'} ? 'active'" class="sidebar-item">
+            <span class="icon">👥</span> Thụ hưởng
+        </a>
+        <a th:href="@{/scheduled}" th:classappend="${currentPage == 'scheduled'} ? 'active'" class="sidebar-item">
+            <span class="icon">⏰</span> Định kỳ
+        </a>
+        <a th:href="@{/profile}" th:classappend="${currentPage == 'profile'} ? 'active'" class="sidebar-item">
+            <span class="icon">👤</span> Hồ sơ
+        </a>
+        <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users}" th:classappend="${currentPage == 'admin'} ? 'active'" class="sidebar-item">
+            <span class="icon">🔧</span> Quản trị
+        </a>
+        <hr style="border:none;border-top:1px solid var(--border);margin:12px 16px;">
+        <a th:href="@{/logout}" class="sidebar-item" style="color:var(--danger)">
+            <span class="icon">🚪</span> Đăng xuất
+        </a>
+    </aside>
+</div>
+
+<div th:fragment="scripts">
+    <script th:src="@{/js/banking.js}"></script>
+</div>
+
+<div th:fragment="toast">
+    <div id="toastContainer" class="toast-container"></div>
+</div>
+</html>

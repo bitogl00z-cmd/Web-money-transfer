@@ -1,66 +1,63 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Login - Money Transfer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-96">
-        <div class="text-center mb-6">
-            <div class="text-4xl mb-2">💰</div>
-            <h1 class="text-2xl font-bold text-gray-800">Money Transfer</h1>
-            <p class="text-gray-500 text-sm">Sign in to your account</p>
+<head th:replace="fragments/layout :: head('Đăng nhập')"></head>
+<body style="background:linear-gradient(135deg, var(--primary-dark), var(--primary));min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:40px;max-width:420px;width:100%;">
+        <div style="text-align:center;margin-bottom:32px;">
+            <div style="font-size:3rem;margin-bottom:8px;">🏦</div>
+            <h1 style="font-size:1.5rem;font-weight:700;color:var(--text);">Ngân Hàng</h1>
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-top:4px;">Đăng nhập để tiếp tục</p>
         </div>
-        <div id="errorMsg" class="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 hidden"></div>
+        <div id="errorMsg" style="display:none;background:#fce4ec;color:var(--danger);padding:12px 16px;border-radius:var(--radius-sm);font-size:0.85rem;margin-bottom:16px;"></div>
         <form id="loginForm">
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-medium mb-2">Username</label>
-                <input type="text" id="username" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
+            <div class="form-group">
+                <label class="form-label">Tên đăng nhập</label>
+                <input type="text" id="username" class="form-input" placeholder="Nhập username" required>
             </div>
-            <div class="mb-6">
-                <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
-                <input type="password" id="password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" required>
+            <div class="form-group">
+                <label class="form-label">Mật khẩu</label>
+                <input type="password" id="password" class="form-input" placeholder="••••••••" required>
             </div>
-            <button type="submit" id="loginBtn" class="w-full bg-blue-600 text-white p-3 rounded-lg font-medium hover:bg-blue-700 transition">Sign In</button>
+            <button type="submit" id="loginBtn" class="btn btn-primary btn-lg btn-full">Đăng nhập</button>
         </form>
-        <p class="mt-6 text-center text-gray-500 text-sm">
-            Don't have an account? <a href="/register" class="text-blue-600 hover:underline font-medium">Register</a>
+        <div style="text-align:center;margin:20px 0;color:var(--text-muted);font-size:0.85rem;">— hoặc —</div>
+        <button id="faceLoginBtn" class="btn btn-outline btn-lg btn-full" onclick="openFaceLogin()">
+            📸 Đăng nhập bằng gương mặt
+        </button>
+        <p style="text-align:center;margin-top:24px;font-size:0.85rem;color:var(--text-muted);">
+            Chưa có tài khoản? <a href="/register" style="color:var(--primary);font-weight:600;text-decoration:none;">Đăng ký</a>
         </p>
     </div>
+    <script th:src="@{/js/banking.js}"></script>
     <script>
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const btn = document.getElementById('loginBtn');
-            const err = document.getElementById('errorMsg');
-            btn.disabled = true;
-            btn.textContent = 'Signing in...';
-            err.classList.add('hidden');
-            try {
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        username: document.getElementById('username').value,
-                        password: document.getElementById('password').value
-                    }),
-                    credentials: 'same-origin'
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    window.location.href = '/dashboard';
-                } else {
-                    err.textContent = data.error || 'Login failed';
-                    err.classList.remove('hidden');
-                }
-            } catch (e) {
-                err.textContent = 'Network error. Please try again.';
-                err.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Sign In';
-            }
+            var btn = document.getElementById('loginBtn');
+            var err = document.getElementById('errorMsg');
+            btn.disabled = true; btn.textContent = 'Đang đăng nhập...';
+            err.style.display = 'none';
+            var res = await apiFetch('/api/auth/login', {
+                method: 'POST',
+                body: { username: document.getElementById('username').value, password: document.getElementById('password').value }
+            });
+            if (res.ok) { window.location.href = '/dashboard'; }
+            else { err.textContent = res.data.error || 'Đăng nhập thất bại'; err.style.display = 'block'; }
+            btn.disabled = false; btn.textContent = 'Đăng nhập';
         });
+
+        async function openFaceLogin() {
+            openCamera(async function(base64) {
+                var btn = document.getElementById('faceLoginBtn');
+                btn.disabled = true; btn.textContent = 'Đang xác thực...';
+                var res = await apiFetch('/api/auth/face-login', {
+                    method: 'POST',
+                    body: { username: document.getElementById('username').value, faceImage: base64 }
+                });
+                if (res.ok) { window.location.href = '/dashboard'; }
+                else { showToast(res.data.error || 'Xác thực thất bại', 'error'); }
+                btn.disabled = false; btn.textContent = '📸 Đăng nhập bằng gương mặt';
+            });
+        }
     </script>
 </body>
 </html>

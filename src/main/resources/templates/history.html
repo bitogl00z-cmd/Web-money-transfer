@@ -1,23 +1,35 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>History - Money Transfer</title><script src="https://cdn.tailwindcss.com"></script></head>
-<body class="bg-gray-100">
-<nav class="bg-blue-600 text-white p-4 shadow-lg"><div class="container mx-auto flex justify-between"><span class="text-xl font-bold">MoneyTransfer</span><div class="space-x-4">
-<a href="/dashboard" class="hover:underline">Dashboard</a><a href="/transfer" class="hover:underline">Transfer</a><a href="/history" class="underline font-bold">History</a><a href="/beneficiaries" class="hover:underline">Beneficiaries</a><a href="/scheduled" class="hover:underline">Scheduled</a><a href="/profile" class="hover:underline">Profile</a><a href="/logout" class="hover:underline">Logout</a>
-</div></div></nav>
-<div class="container mx-auto p-4"><h1 class="text-2xl font-bold mb-4">Transaction History</h1>
-<div class="bg-white p-6 rounded-lg shadow">
-<table class="w-full"><thead><tr class="border-b"><th class="text-left p-2">Code</th><th class="text-left p-2">Amount</th><th class="text-left p-2">Type</th><th class="text-left p-2">Description</th><th class="text-left p-2">Date</th></tr></thead><tbody id="txBody"></tbody></table>
-</div></div>
-<script>
-fetch('/api/transactions/history?page=0&size=50', { credentials: 'include' })
-.then(r=>r.json()).then(data=>{
-const body=document.getElementById('txBody');
-data.content?.forEach(tx=>{
-const row=body.insertRow();
-row.innerHTML='<td class="p-2">'+tx.transactionCode+'</td><td class="p-2">$'+tx.amount+'</td><td class="p-2">'+tx.type+'</td><td class="p-2">'+(tx.description||'')+'</td><td class="p-2">'+new Date(tx.createdAt).toLocaleDateString()+'</td>';
-});
-});
-</script>
+<head th:replace="fragments/layout :: head('Lịch sử')"></head>
+<body>
+    <nav th:replace="fragments/layout :: navbar('history')"></nav>
+    <aside th:replace="fragments/layout :: sidebar('history')"></aside>
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">📋 Lịch sử giao dịch</h1>
+            <p class="page-subtitle">Xem tất cả giao dịch đã thực hiện</p>
+        </div>
+        <div class="card">
+            <div class="table-container">
+                <table class="table">
+                    <thead><tr><th>Mã GD</th><th>Số tiền</th><th>Loại</th><th>Nội dung</th><th>Ngày</th></tr></thead>
+                    <tbody id="txBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <div th:replace="fragments/layout :: toast"></div>
+    <div th:replace="fragments/layout :: scripts"></div>
+    <script>
+        fetch('/api/transactions/history?page=0&size=50', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(data) {
+            var body = document.getElementById('txBody');
+            if (data.content && data.content.length) {
+                data.content.forEach(function(tx) {
+                    var row = body.insertRow();
+                    row.innerHTML = '<td style="font-family:monospace;font-size:0.85rem;">' + tx.transactionCode + '</td><td style="font-weight:600;">' + formatVND(tx.amount) + '</td><td><span class="badge badge-info">' + tx.type + '</span></td><td>' + (tx.description || '') + '</td><td>' + formatDate(tx.createdAt) + '</td>';
+                });
+            } else { body.innerHTML = '<tr><td colspan="5" class="empty">Chưa có giao dịch nào</td></tr>'; }
+        }).catch(function() { showToast('Không thể tải lịch sử', 'error'); });
+    </script>
 </body>
 </html>

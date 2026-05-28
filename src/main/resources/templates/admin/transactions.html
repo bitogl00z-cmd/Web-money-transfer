@@ -1,82 +1,41 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <meta charset="UTF-8">
-    <title>Admin Transactions - Money Transfer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-    <nav class="bg-gray-900 text-white p-4 shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
-            <span class="text-xl font-bold">💰 MoneyTransfer Admin</span>
-            <div class="space-x-6">
-                <a href="/dashboard" class="hover:text-blue-300 transition">Dashboard</a>
-                <a href="/admin/users" class="hover:text-blue-300 transition">Users</a>
-                <a href="/admin/transactions" class="text-blue-400 font-bold border-b-2 border-blue-400">Transactions</a>
-                <a href="/logout" class="text-red-300 hover:text-red-200 transition">Logout</a>
+<head th:replace="fragments/layout :: head('Quản trị')"></head>
+<body>
+    <nav th:replace="fragments/layout :: navbar('admin')"></nav>
+    <aside th:replace="fragments/layout :: sidebar('admin')"></aside>
+    <main class="main-content">
+        <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h1 class="page-title">📊 Tất cả giao dịch</h1>
+                <p class="page-subtitle">Xem tất cả giao dịch trong hệ thống</p>
             </div>
+            <span class="badge badge-info" style="font-size:1rem;padding:8px 16px;" id="txCount">Đang tải...</span>
         </div>
-    </nav>
-
-    <div class="container mx-auto p-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">📊 All Transactions</h1>
-            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium" id="txCount">Loading...</span>
+        <div class="card">
+            <div class="table-container">
+                <table class="table"><thead><tr><th>Mã GD</th><th>Từ tài khoản</th><th>Đến tài khoản</th><th>Số tiền</th><th>Loại</th><th>Trạng thái</th><th>Ngày</th></tr></thead><tbody id="txBody"></tbody></table>
+            </div>
+            <div id="loadingState" style="text-align:center;padding:40px;color:var(--text-muted);">Đang tải...</div>
         </div>
-
-        <div class="bg-white rounded-xl shadow overflow-hidden">
-            <table class="w-full">
-                <thead>
-                    <tr class="bg-gray-50 border-b">
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Code</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">From</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">To</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Amount</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Type</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Status</th>
-                        <th class="text-left p-4 text-gray-600 font-medium text-sm">Date</th>
-                    </tr>
-                </thead>
-                <tbody id="txBody"></tbody>
-            </table>
-            <div id="loadingState" class="text-center p-8 text-gray-400">Loading transactions...</div>
-        </div>
-    </div>
-
+    </main>
+    <div th:replace="fragments/layout :: toast"></div>
+    <div th:replace="fragments/layout :: scripts"></div>
     <script>
-        fetch('/api/admin/transactions?page=0&size=100', { credentials: 'include' })
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('loadingState').classList.add('hidden');
-                const body = document.getElementById('txBody');
-                const txs = data.content || data;
-                document.getElementById('txCount').textContent = txs.length + ' transactions';
-                txs.forEach(tx => {
-                    const row = body.insertRow();
-                    row.className = 'border-b hover:bg-gray-50 transition';
-                    const typeBadge = tx.type === 'TRANSFER'
-                        ? '<span class="text-blue-600">↔ Transfer</span>'
-                        : tx.type === 'DEPOSIT'
-                        ? '<span class="text-green-600">↓ Deposit</span>'
-                        : '<span class="text-red-600">↑ Withdraw</span>';
-                    const statusBadge = tx.status === 'COMPLETED'
-                        ? '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">COMPLETED</span>'
-                        : '<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded text-xs">PENDING</span>';
-                    row.innerHTML = '<td class="p-4 font-mono text-sm text-gray-600">' + tx.transactionCode + '</td>'
-                        + '<td class="p-4 text-sm">' + (tx.fromAccountNumber || '-') + '</td>'
-                        + '<td class="p-4 text-sm">' + (tx.toAccountNumber || '-') + '</td>'
-                        + '<td class="p-4 font-medium">$' + tx.amount + '</td>'
-                        + '<td class="p-4">' + typeBadge + '</td>'
-                        + '<td class="p-4">' + statusBadge + '</td>'
-                        + '<td class="p-4 text-sm text-gray-500">' + new Date(tx.createdAt).toLocaleDateString() + '</td>';
+        fetch('/api/admin/transactions?page=0&size=100', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(data) {
+            document.getElementById('loadingState').style.display = 'none';
+            var body = document.getElementById('txBody');
+            var txs = data.content || data;
+            document.getElementById('txCount').textContent = txs.length + ' giao dịch';
+            if (txs.length) {
+                txs.forEach(function(tx) {
+                    var row = body.insertRow();
+                    var typeBadge = tx.type === 'TRANSFER' ? '<span class="badge badge-info">↔ Chuyển</span>' : tx.type === 'DEPOSIT' ? '<span class="badge badge-success">↓ Nạp</span>' : '<span class="badge badge-warning">↑ Rút</span>';
+                    var statusBadge = tx.status === 'COMPLETED' ? '<span class="badge badge-success">HOÀN TẤT</span>' : '<span class="badge badge-warning">CHỜ</span>';
+                    row.innerHTML = '<td style="font-family:monospace;font-size:0.85rem;">' + tx.transactionCode + '</td><td style="font-size:0.85rem;">' + (tx.fromAccountNumber || '-') + '</td><td style="font-size:0.85rem;">' + (tx.toAccountNumber || '-') + '</td><td style="font-weight:600;">' + formatVND(tx.amount) + '</td><td>' + typeBadge + '</td><td>' + statusBadge + '</td><td style="font-size:0.85rem;color:var(--text-muted);">' + formatDateShort(tx.createdAt) + '</td>';
                 });
-                if (txs.length === 0) {
-                    body.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-400">No transactions found</td></tr>';
-                }
-            })
-            .catch(() => {
-                document.getElementById('loadingState').textContent = 'Failed to load transactions.';
-            });
+            } else { body.innerHTML = '<tr><td colspan="7" class="empty">Không có giao dịch</td></tr>'; }
+        }).catch(function() { document.getElementById('loadingState').textContent = 'Không thể tải dữ liệu.'; });
     </script>
 </body>
 </html>
