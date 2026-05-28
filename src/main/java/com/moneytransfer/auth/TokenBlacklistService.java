@@ -1,11 +1,13 @@
 package com.moneytransfer.auth;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Profile("!dev")
 public class TokenBlacklistService {
     private static final String BLACKLIST_PREFIX = "blacklist:token:";
     private final RedisTemplate<String, String> redisTemplate;

@@ -50,6 +50,7 @@ C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\FaceControll
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\user\User.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\export\ExportController.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\auth\RegisterRequest.java
+C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\auth\InMemoryTokenBlacklistService.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\scheduled\RecurringPaymentJob.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\beneficiary\Beneficiary.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\beneficiary\BeneficiaryController.java

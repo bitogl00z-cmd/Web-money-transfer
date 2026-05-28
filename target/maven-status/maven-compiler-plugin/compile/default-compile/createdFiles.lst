@@ -48,6 +48,7 @@ com\moneytransfer\beneficiary\BeneficiaryService.class
 com\moneytransfer\scheduled\ScheduledPayment.class
 com\moneytransfer\face\FaceService.class
 com\moneytransfer\audit\AuditAspect.class
+com\moneytransfer\auth\InMemoryTokenBlacklistService.class
 com\moneytransfer\otp\OtpRepository.class
 com\moneytransfer\beneficiary\BeneficiaryRepository.class
 com\moneytransfer\audit\AuditLogRepository.class
