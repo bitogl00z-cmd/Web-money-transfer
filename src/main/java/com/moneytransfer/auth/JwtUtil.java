@@ -46,6 +46,16 @@ public class JwtUtil {
                 .compact();
     }
 
+    public String generateFaceToken(Long userId, String purpose) {
+        return Jwts.builder()
+                .claim("userId", userId)
+                .claim("purpose", purpose)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(secretKey)
+                .compact();
+    }
+
     public Claims validateToken(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
