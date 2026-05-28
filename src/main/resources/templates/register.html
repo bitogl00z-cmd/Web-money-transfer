@@ -61,9 +61,10 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    success.textContent = 'Registration successful! Redirecting...';
+                    success.textContent = 'Registration successful! Redirecting to login...';
                     success.classList.remove('hidden');
-                    setTimeout(() => window.location.href = '/dashboard', 1000);
+                    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+                    setTimeout(() => window.location.href = '/login', 1000);
                 } else {
                     err.textContent = data.error || 'Registration failed';
                     err.classList.remove('hidden');
