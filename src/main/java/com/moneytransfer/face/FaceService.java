@@ -107,7 +107,7 @@ public class FaceService {
     public boolean verifyFaceBase64Sync(Long userId, String base64Image) {
         try {
             return verifyFaceBase64(userId, base64Image).get(15, TimeUnit.SECONDS);
-        } catch (Exception e) {
+        } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException | InterruptedException e) {
             throw new RuntimeException("Face verification failed", e);
         }
     }

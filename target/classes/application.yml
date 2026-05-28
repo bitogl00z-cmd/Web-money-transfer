@@ -2,6 +2,10 @@ server:
   port: 8080
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   datasource:
     url: jdbc:mysql://localhost:3306/money_transfer?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root

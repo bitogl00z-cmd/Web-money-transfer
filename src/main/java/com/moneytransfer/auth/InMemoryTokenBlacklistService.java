@@ -1,13 +1,13 @@
 package com.moneytransfer.auth;
 
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-@Profile("dev")
+@Primary
 public class InMemoryTokenBlacklistService extends TokenBlacklistService {
 
     private final Map<String, Long> blacklist = new ConcurrentHashMap<>();

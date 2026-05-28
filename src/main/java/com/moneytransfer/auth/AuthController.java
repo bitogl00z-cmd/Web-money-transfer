@@ -90,12 +90,12 @@ public class AuthController {
         try {
             String ip = httpRequest.getRemoteAddr();
             User user = userRepository.findByUsername(request.username())
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                    .orElseThrow(() -> new IllegalArgumentException("Face login failed"));
             if (user.isLocked()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Account is locked"));
             }
             if (!user.isFaceEnabled()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Face login not enabled. Register your face first."));
+                return ResponseEntity.badRequest().body(Map.of("error", "Face login failed"));
             }
             boolean matched = faceService.verifyFaceBase64Sync(user.getId(), request.faceImage());
             if (!matched) {
@@ -104,7 +104,7 @@ public class AuthController {
                     user.setLocked(true);
                 }
                 userRepository.save(user);
-                return ResponseEntity.badRequest().body(Map.of("error", "Face verification failed"));
+                return ResponseEntity.badRequest().body(Map.of("error", "Face login failed"));
             }
             user.setFailedAttempts(0);
             userRepository.save(user);
@@ -117,7 +117,7 @@ public class AuthController {
 
             return ResponseEntity.ok(Map.of("message", "Face login successful", "userId", user.getId()));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Face login failed"));
         }
     }
 

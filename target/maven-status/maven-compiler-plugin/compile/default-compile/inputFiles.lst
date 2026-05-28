@@ -3,6 +3,7 @@ C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\otp\OtpCode.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\user\UserRepository.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\config\FaceProcessingConfig.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\config\RedisConfig.java
+C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\FaceLoginRequest.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\user\UserTier.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\admin\AdminService.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\scheduled\PaymentStatus.java
