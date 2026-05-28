@@ -78,6 +78,9 @@ public class FaceService {
     }
 
     public CompletableFuture<Boolean> verifyFaceBase64(Long userId, String base64Image) {
+        if (base64Image == null || base64Image.isEmpty()) {
+            throw new IllegalArgumentException("Face image is required");
+        }
         return CompletableFuture.supplyAsync(() -> {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -95,7 +98,7 @@ public class FaceService {
                 double similarity = faceUtil.cosineSimilarity(encoding, stored);
                 return similarity >= similarityThreshold;
             } catch (Exception e) {
-                throw new RuntimeException("Face verification failed: " + e.getMessage());
+                throw new RuntimeException("Face verification failed", e);
             }
         }, faceExecutor);
     }
