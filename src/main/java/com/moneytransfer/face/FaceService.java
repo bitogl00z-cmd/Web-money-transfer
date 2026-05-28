@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -63,6 +64,29 @@ public class FaceService {
             }
             try {
                 MatOfByte matOfByte = new MatOfByte(file.getBytes());
+                Mat image = faceUtil.resizeToMax(Imgcodecs.imdecode(matOfByte, Imgcodecs.IMREAD_COLOR));
+                Rect faceRect = faceUtil.detectFace(image);
+                double[] encoding = faceUtil.computeEncoding(image, faceRect);
+                double[] stored = Arrays.stream(user.getFaceEncoding().split(","))
+                        .mapToDouble(Double::parseDouble).toArray();
+                double similarity = faceUtil.cosineSimilarity(encoding, stored);
+                return similarity >= similarityThreshold;
+            } catch (Exception e) {
+                throw new RuntimeException("Face verification failed: " + e.getMessage());
+            }
+        }, faceExecutor);
+    }
+
+    public CompletableFuture<Boolean> verifyFaceBase64(Long userId, String base64Image) {
+        return CompletableFuture.supplyAsync(() -> {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            if (user.getFaceEncoding() == null) {
+                throw new IllegalArgumentException("No face registered");
+            }
+            try {
+                byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+                MatOfByte matOfByte = new MatOfByte(imageBytes);
                 Mat image = faceUtil.resizeToMax(Imgcodecs.imdecode(matOfByte, Imgcodecs.IMREAD_COLOR));
                 Rect faceRect = faceUtil.detectFace(image);
                 double[] encoding = faceUtil.computeEncoding(image, faceRect);
