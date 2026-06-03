@@ -41,13 +41,7 @@
             openCamera(async function(base64) {
                 var btn = document.getElementById('registerFaceBtn');
                 btn.disabled = true; btn.textContent = 'Đang xử lý...';
-                var fd = new FormData();
-                var binary = atob(base64);
-                var array = new Uint8Array(binary.length);
-                for (var i = 0; i < binary.length; i++) { array[i] = binary.charCodeAt(i); }
-                var blob = new Blob([array], { type: 'image/jpeg' });
-                fd.append('file', blob, 'face.jpg');
-                var res = await apiFetch('/api/face/register', { method: 'POST', body: fd });
+                var res = await apiFetch('/api/face/register', { method: 'POST', body: { faceImage: base64 } });
                 if (res.ok) {
                     showToast('Đăng ký gương mặt thành công!', 'success');
                     document.getElementById('faceStatus').innerHTML = '<span class="badge badge-success">✓ Đã đăng ký gương mặt</span>';

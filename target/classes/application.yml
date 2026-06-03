@@ -50,8 +50,10 @@ app:
     secret-key: minioadmin
     bucket: face-images
   face:
-    max-image-size: 400
     thread-pool-size: 4
+  compreface:
+    url: http://localhost:8000
+    api-key: ${COMPREFACE_API_KEY:00000000-0000-0000-0000-000000000000}
     similarity-threshold: 0.7
   checksum:
     secret-key: ${CHECKSUM_SECRET:money-transfer-checksum-secret-key-2026}

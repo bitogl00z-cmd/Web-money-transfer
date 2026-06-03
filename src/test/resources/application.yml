@@ -29,8 +29,10 @@ app:
     secret-key: test
     bucket: test-bucket
   face:
-    max-image-size: 400
     thread-pool-size: 2
+  compreface:
+    url: http://localhost:8000
+    api-key: test-api-key
     similarity-threshold: 0.7
   checksum:
     secret-key: test-checksum-secret-key

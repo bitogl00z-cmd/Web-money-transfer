@@ -1,6 +1,7 @@
 package com.moneytransfer.transaction;
 
 import com.moneytransfer.account.Account;
+import com.moneytransfer.account.AccountRepository;
 import com.moneytransfer.account.AccountService;
 import com.moneytransfer.auth.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -21,12 +22,14 @@ import java.util.stream.Collectors;
 public class TransactionController {
     private final TransactionService transactionService;
     private final AccountService accountService;
-
+    private final AccountRepository accountRepository;
     private final JwtUtil jwtUtil;
 
-    public TransactionController(TransactionService transactionService, AccountService accountService, JwtUtil jwtUtil) {
+    public TransactionController(TransactionService transactionService, AccountService accountService,
+                                  AccountRepository accountRepository, JwtUtil jwtUtil) {
         this.transactionService = transactionService;
         this.accountService = accountService;
+        this.accountRepository = accountRepository;
         this.jwtUtil = jwtUtil;
     }
 
@@ -37,7 +40,10 @@ public class TransactionController {
             Claims claims = (Claims) auth.getDetails();
             Long userId = ((Integer) claims.get("userId")).longValue();
             Long fromId = Long.valueOf(body.get("fromAccountId").toString());
-            Long toId = Long.valueOf(body.get("toAccountId").toString());
+            String toAccountNumber = body.get("toAccountNumber").toString();
+            Account toAccount = accountRepository.findByAccountNumber(toAccountNumber)
+                    .orElseThrow(() -> new IllegalArgumentException("Account not found: " + toAccountNumber));
+            Long toId = toAccount.getId();
             BigDecimal amount = new BigDecimal(body.get("amount").toString());
             String description = (String) body.getOrDefault("description", "");
 

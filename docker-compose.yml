@@ -1,35 +1,24 @@
-version: '3.8'
+version: "3.8"
 services:
   mysql:
     image: mysql:8.0
-    container_name: money-transfer-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: 123456
       MYSQL_DATABASE: money_transfer
     ports:
       - "3306:3306"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
 
-  redis:
-    image: redis:7-alpine
-    container_name: money-transfer-redis
+  compreface:
+    image: exadel/compreface:latest
     ports:
-      - "6379:6379"
-
-  minio:
-    image: minio/minio:latest
-    container_name: money-transfer-minio
+      - "8000:8000"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+      ADMIN_PASSWORD: admin
     volumes:
-      - minio-data:/data
+      - compreface_data:/face-recognition
 
 volumes:
-  mysql-data:
-  minio-data:
+  mysql_data:
+  compreface_data:
