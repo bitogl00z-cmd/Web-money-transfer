@@ -1,3 +1,8 @@
+com\moneytransfer\face\FaceDetectorTest.class
 com\moneytransfer\MoneyTransferApplicationTests.class
+com\moneytransfer\face\ImagePreprocessorTest.class
+com\moneytransfer\face\JavaCVFaceEngineTest.class
+com\moneytransfer\face\LBPHModelManagerTest.class
+com\moneytransfer\face\FaceRecognizerTest.class
 com\moneytransfer\transaction\TransactionServiceTest.class
 com\moneytransfer\auth\JwtUtilTest.class

@@ -16,6 +16,7 @@ C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\qr\QrService.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\dashboard\DashboardService.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\MoneyTransferApplication.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\config\RestTemplateConfig.java
+C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\JavaCVFaceEngine.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\transaction\TransactionService.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\transaction\Transaction.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\config\WebSocketConfig.java
@@ -24,6 +25,7 @@ C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\audit\AuditAspect
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\auth\AuthController.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\account\AccountController.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\config\DataInitializer.java
+C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\FaceDetector.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\transaction\TransactionType.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\user\UserRole.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\auth\TokenBlacklistService.java
@@ -40,6 +42,7 @@ C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\qr\QrController.j
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\transaction\TransactionController.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\otp\OtpRepository.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\otp\OtpService.java
+C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\LBPHModelManager.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\otp\OtpType.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\beneficiary\BeneficiaryRepository.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\user\UserService.java
@@ -51,8 +54,10 @@ C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\transaction\Trans
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\account\AccountStatus.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\config\SecurityConfig.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\FaceController.java
+C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\ImagePreprocessor.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\user\User.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\export\ExportController.java
+C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\FaceRecognizer.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\admin\AdminTransactionDto.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\auth\RegisterRequest.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\CompreFaceClient.java

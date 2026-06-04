@@ -1,6 +1,7 @@
 package com.moneytransfer.face;
 
 import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.MatVector;
 import org.slf4j.Logger;
@@ -62,15 +63,16 @@ public class JavaCVFaceEngine {
     private void retrainModel() {
         if (faceStore.isEmpty()) return;
         MatVector images = new MatVector(faceStore.size());
-        Mat labelsMat = new Mat((int) faceStore.size(), 1, org.bytedeco.opencv.global.opencv_core.CV_32SC1);
+        IntPointer labelsData = new IntPointer(faceStore.size());
         int i = 0;
         for (Map.Entry<Long, byte[]> entry : faceStore.entrySet()) {
             Mat source = decodeImage(entry.getValue());
             Mat faceRoi = faceDetector.cropLargestFace(source);
             images.put(i, preprocessor.preprocess(faceRoi));
-            labelsMat.ptr(i).put((byte) entry.getKey().intValue());
+            labelsData.put(i, entry.getKey().intValue());
             i++;
         }
+        Mat labelsMat = new Mat((int) faceStore.size(), 1, org.bytedeco.opencv.global.opencv_core.CV_32SC1, labelsData);
         faceRecognizer.train(images, labelsMat);
     }
 
