@@ -12,13 +12,13 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class FaceService {
-    private final CompreFaceClient compreFaceClient;
+    private final JavaCVFaceEngine javaCVFaceEngine;
     private final UserRepository userRepository;
     private final Executor faceExecutor;
 
-    public FaceService(CompreFaceClient compreFaceClient, UserRepository userRepository,
+    public FaceService(JavaCVFaceEngine javaCVFaceEngine, UserRepository userRepository,
                        @Qualifier("faceExecutor") Executor faceExecutor) {
-        this.compreFaceClient = compreFaceClient;
+        this.javaCVFaceEngine = javaCVFaceEngine;
         this.userRepository = userRepository;
         this.faceExecutor = faceExecutor;
     }
@@ -28,7 +28,7 @@ public class FaceService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         try {
             byte[] imageBytes = Base64.getDecoder().decode(base64Image);
-            compreFaceClient.registerFace(userId, imageBytes);
+            javaCVFaceEngine.registerFace(userId, imageBytes);
             user.setFaceEnabled(true);
             userRepository.save(user);
             return "Face registered successfully";
@@ -41,15 +41,15 @@ public class FaceService {
         if (base64Image == null || base64Image.isEmpty()) {
             throw new IllegalArgumentException("Face image is required");
         }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (!user.isFaceEnabled()) {
+            throw new IllegalArgumentException("No face registered");
+        }
         return CompletableFuture.supplyAsync(() -> {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
-            if (!user.isFaceEnabled()) {
-                throw new IllegalArgumentException("No face registered");
-            }
             try {
                 byte[] imageBytes = Base64.getDecoder().decode(base64Image);
-                return compreFaceClient.verifyFace(userId, imageBytes);
+                return javaCVFaceEngine.verifyFace(userId, imageBytes);
             } catch (Exception e) {
                 throw new RuntimeException("Face verification failed", e);
             }
