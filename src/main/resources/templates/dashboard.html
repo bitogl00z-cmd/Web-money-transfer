@@ -15,15 +15,17 @@
                 <div class="stat-value" id="totalBalance">—</div>
                 <div class="stat-sub">Tất cả tài khoản</div>
             </div>
-            <div class="stat-card green">
-                <div class="stat-label">Số tài khoản</div>
-                <div class="stat-value" id="accountCount">—</div>
-                <div class="stat-sub">Đang hoạt động</div>
-            </div>
             <div class="stat-card orange">
                 <div class="stat-label">Giao dịch gần đây</div>
                 <div class="stat-value" id="recentCount">—</div>
                 <div class="stat-sub">Trong 7 ngày qua</div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:24px;">
+            <div class="card-header"><div class="card-title">💳 Tài khoản của bạn</div></div>
+            <div class="table-container">
+                <table class="table"><thead><tr><th>STK</th><th>Số dư</th><th>Trạng thái</th></tr></thead><tbody id="accountsBody"></tbody></table>
             </div>
         </div>
         <div class="card" style="margin-bottom:24px;">
@@ -61,8 +63,15 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 document.getElementById('totalBalance').textContent = formatVND(data.totalBalance);
-                document.getElementById('accountCount').textContent = data.accountCount;
                 document.getElementById('recentCount').textContent = (data.recentTransactions && data.recentTransactions.length) || 0;
+                var abody = document.getElementById('accountsBody');
+                if (data.accounts && data.accounts.length) {
+                    data.accounts.forEach(function(a) {
+                        var row = abody.insertRow();
+                        var st = a.status === 'ACTIVE' ? '<span class="badge badge-success">Hoạt động</span>' : '<span class="badge badge-danger">' + a.status + '</span>';
+                        row.innerHTML = '<td style="font-family:monospace;font-weight:600;font-size:1rem;">' + a.accountNumber + '</td><td style="font-weight:600;">' + formatVND(a.balance) + '</td><td>' + st + '</td>';
+                    });
+                } else { abody.innerHTML = '<tr><td colspan="3" class="empty">Chưa có tài khoản</td></tr>'; }
                 var txBody = document.getElementById('txBody');
                 if (data.recentTransactions && data.recentTransactions.length) {
                     data.recentTransactions.forEach(function(tx) {

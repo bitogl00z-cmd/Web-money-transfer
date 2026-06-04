@@ -24,6 +24,7 @@ C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\account\Account.j
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\audit\AuditAspect.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\auth\AuthController.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\account\AccountController.java
+C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\scheduled\InsufficientBalanceException.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\config\DataInitializer.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\face\FaceDetector.java
 C:\Users\Public\money-transfer\src\main\java\com\moneytransfer\transaction\TransactionType.java

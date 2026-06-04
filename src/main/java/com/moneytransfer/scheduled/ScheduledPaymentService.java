@@ -6,12 +6,18 @@ import com.moneytransfer.account.AccountService;
 import com.moneytransfer.transaction.Transaction;
 import com.moneytransfer.transaction.TransactionRepository;
 import com.moneytransfer.transaction.TransactionType;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
@@ -21,14 +27,17 @@ public class ScheduledPaymentService {
     private final AccountRepository accountRepository;
     private final AccountService accountService;
     private final TransactionRepository transactionRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public ScheduledPaymentService(ScheduledPaymentRepository scheduledPaymentRepository,
                                    AccountRepository accountRepository, AccountService accountService,
-                                   TransactionRepository transactionRepository) {
+                                   TransactionRepository transactionRepository,
+                                   SimpMessagingTemplate messagingTemplate) {
         this.scheduledPaymentRepository = scheduledPaymentRepository;
         this.accountRepository = accountRepository;
         this.accountService = accountService;
         this.transactionRepository = transactionRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public Optional<ScheduledPayment> findById(Long id) {
@@ -55,13 +64,26 @@ public class ScheduledPaymentService {
     @Transactional
     public void processDuePayments() {
         List<ScheduledPayment> due = scheduledPaymentRepository
-                .findByStatusAndNextRunLessThanEqual(PaymentStatus.ACTIVE, LocalDate.now());
+                .findByStatusAndNextRunLessThanEqual(PaymentStatus.ACTIVE, LocalDateTime.now());
         for (ScheduledPayment payment : due) {
             try {
                 processPayment(payment);
-                payment.setNextRun(computeNextRun(payment));
+                if (payment.getFrequency() == PaymentFrequency.ONE_TIME) {
+                    payment.setStatus(PaymentStatus.COMPLETED);
+                } else {
+                    LocalDateTime next = computeNextRun(payment);
+                    if (payment.getEndDate() != null && next.isAfter(payment.getEndDate())) {
+                        payment.setStatus(PaymentStatus.COMPLETED);
+                    } else {
+                        payment.setNextRun(next);
+                    }
+                }
+            } catch (InsufficientBalanceException e) {
+                payment.setStatus(PaymentStatus.CANCELLED);
+                notifyFailure(payment, "Số dư không đủ để thực hiện thanh toán định kỳ");
             } catch (Exception e) {
                 payment.setStatus(PaymentStatus.PAUSED);
+                notifyFailure(payment, "Lỗi không xác định khi xử lý thanh toán định kỳ");
             }
             scheduledPaymentRepository.save(payment);
         }
@@ -70,12 +92,14 @@ public class ScheduledPaymentService {
     private void processPayment(ScheduledPayment payment) {
         Account from = accountRepository.findByAccountNumber(
                 payment.getToAccountNumber()).orElse(null);
-        if (from == null) return;
+        if (from == null) {
+            throw new IllegalArgumentException("Recipient account not found: " + payment.getToAccountNumber());
+        }
         Account senderAccount = accountRepository.findByIdWithLock(payment.getFromAccountId())
                 .orElseThrow();
         accountService.verifyChecksum(senderAccount);
         if (senderAccount.getBalance().compareTo(payment.getAmount()) < 0) {
-            throw new IllegalArgumentException("Insufficient balance");
+            throw new InsufficientBalanceException("Insufficient balance");
         }
         senderAccount.setBalance(senderAccount.getBalance().subtract(payment.getAmount()));
         senderAccount.setBalanceChecksum(accountService.computeChecksum(senderAccount));
@@ -85,12 +109,35 @@ public class ScheduledPaymentService {
         transactionRepository.save(new Transaction(txCode, payment.getFromAccountId(), from.getId(),
                 payment.getAmount(), senderAccount.getBalance(), null, TransactionType.RECURRING,
                 payment.getDescription()));
+
+        String formattedAmount = NumberFormat.getNumberInstance(Locale.of("vi", "VN")).format(payment.getAmount()) + "đ";
+        String message = "Đã chuyển " + formattedAmount + " đến " + payment.getToAccountNumber();
+        Long senderUserId = senderAccount.getUserId();
+        messagingTemplate.convertAndSend("/topic/notifications/" + senderUserId,
+                Map.of("type", "SCHEDULED_PAYMENT", "title", "Thanh toán định kỳ",
+                       "message", message, "balance", senderAccount.getBalance(),
+                       "transactionCode", txCode));
     }
 
-    private LocalDate computeNextRun(ScheduledPayment payment) {
+    private void notifyFailure(ScheduledPayment payment, String reason) {
+        Long senderUserId = accountRepository.findById(payment.getFromAccountId())
+                .map(Account::getUserId).orElse(null);
+        if (senderUserId == null) return;
+        messagingTemplate.convertAndSend("/topic/notifications/" + senderUserId,
+                Map.of("type", "SCHEDULED_PAYMENT_FAILED", "title", "Thanh toán định kỳ thất bại",
+                       "message", reason + " - " + formatVND(payment.getAmount()) + " đến " + payment.getToAccountNumber() + " đã bị hủy",
+                       "balance", null, "transactionCode", null));
+    }
+
+    private String formatVND(java.math.BigDecimal amount) {
+        return NumberFormat.getNumberInstance(Locale.of("vi", "VN")).format(amount) + "đ";
+    }
+
+    private LocalDateTime computeNextRun(ScheduledPayment payment) {
         return switch (payment.getFrequency()) {
             case WEEKLY -> payment.getNextRun().plusWeeks(1);
             case MONTHLY -> payment.getNextRun().plusMonths(1);
+            default -> payment.getNextRun();
         };
     }
 }

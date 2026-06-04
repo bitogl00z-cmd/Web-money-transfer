@@ -11,7 +11,7 @@ public class RecurringPaymentJob {
         this.scheduledPaymentService = scheduledPaymentService;
     }
 
-    @Scheduled(cron = "0 0 8 * * *")
+    @Scheduled(cron = "0 * * * * *")
     public void processRecurringPayments() {
         scheduledPaymentService.processDuePayments();
     }

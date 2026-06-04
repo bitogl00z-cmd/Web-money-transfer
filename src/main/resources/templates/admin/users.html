@@ -12,11 +12,28 @@
             </div>
             <span class="badge badge-info" style="font-size:1rem;padding:8px 16px;" id="userCount">0 người dùng</span>
         </div>
-        <div class="card">
+        <div class="stat-grid" id="adminStats" style="margin-bottom:24px;">
+            <div class="stat-card blue"><div class="stat-label">Tổng người dùng</div><div class="stat-value" id="statTotalUsers">—</div></div>
+            <div class="stat-card green"><div class="stat-label">Đang hoạt động</div><div class="stat-value" id="statActiveUsers">—</div></div>
+            <div class="stat-card red"><div class="stat-label">Đã khóa</div><div class="stat-value" id="statLockedUsers">—</div></div>
+            <div class="stat-card purple"><div class="stat-label">Tài khoản</div><div class="stat-value" id="statTotalAccounts">—</div></div>
+            <div class="stat-card orange"><div class="stat-label">Tổng số dư</div><div class="stat-value" id="statTotalBalance">—</div></div>
+            <div class="stat-card teal"><div class="stat-label">Giao dịch</div><div class="stat-value" id="statTotalTx">—</div></div>
+        </div>
+        <div class="card" style="margin-bottom:24px;">
+            <div class="card-header"><div class="card-title">👥 Người dùng</div></div>
             <div class="table-container">
                 <table class="table"><thead><tr><th>ID</th><th>Username</th><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="usersBody"></tbody></table>
             </div>
             <div id="loadingState" style="text-align:center;padding:40px;color:var(--text-muted);">Đang tải...</div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><div class="card-title">💰 Tài khoản &amp; Nạp/Rút tiền</div></div>
+            <div class="table-container">
+                <table class="table"><thead><tr><th>TK#</th><th>User ID</th><th>Trạng thái</th><th>Nạp</th><th>Rút</th></tr></thead><tbody id="accountsBody"></tbody></table>
+            </div>
+            <div id="accountsLoading" style="text-align:center;padding:40px;color:var(--text-muted);">Đang tải tài khoản...</div>
         </div>
     </main>
     <div th:replace="fragments/layout :: toast"></div>
@@ -37,8 +54,58 @@
                 });
             } else { body.innerHTML = '<tr><td colspan="7" class="empty">Không có người dùng</td></tr>'; }
         }).catch(function() { document.getElementById('loadingState').textContent = 'Không thể tải dữ liệu.'; });
+
+        fetch('/api/admin/accounts', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(accounts) {
+            document.getElementById('accountsLoading').style.display = 'none';
+            var body = document.getElementById('accountsBody');
+            if (accounts.length) {
+                accounts.forEach(function(a) {
+                    var row = body.insertRow();
+                    var statusBadge = a.status === 'ACTIVE' ? '<span class="badge badge-success">ACTIVE</span>' : '<span class="badge badge-danger">' + a.status + '</span>';
+                    row.innerHTML = '<td style="font-family:monospace;font-size:0.85rem;">' + a.accountNumber + '</td><td>' + a.userId + '</td><td>' + statusBadge + '</td>'
+                        + '<td><button onclick="openTxModal(' + a.id + ',\'deposit\')" class="btn btn-success btn-sm">➕ Nạp</button></td>'
+                        + '<td><button onclick="openTxModal(' + a.id + ',\'withdraw\')" class="btn btn-warning btn-sm">➖ Rút</button></td>';
+                });
+            } else { body.innerHTML = '<tr><td colspan="5" class="empty">Không có tài khoản</td></tr>'; }
+        }).catch(function() { document.getElementById('accountsLoading').textContent = 'Không thể tải tài khoản.'; });
+
+        fetch('/api/admin/stats', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(s) {
+            document.getElementById('statTotalUsers').textContent = s.totalUsers;
+            document.getElementById('statActiveUsers').textContent = s.activeUsers;
+            document.getElementById('statLockedUsers').textContent = s.lockedUsers;
+            document.getElementById('statTotalAccounts').textContent = s.totalAccounts;
+            document.getElementById('statTotalBalance').textContent = formatVND(s.totalBalance);
+            document.getElementById('statTotalTx').textContent = s.totalTransactions;
+        }).catch(function() {});
+
         function lockUser(id) { if (confirm('Khóa người dùng này?')) { fetch('/api/admin/users/' + id + '/lock', { method: 'POST', credentials: 'include' }).then(function(r) { if (r.ok) location.reload(); }); } }
         function unlockUser(id) { if (confirm('Mở khóa người dùng này?')) { fetch('/api/admin/users/' + id + '/unlock', { method: 'POST', credentials: 'include' }).then(function(r) { if (r.ok) location.reload(); }); } }
+
+        function openTxModal(accountId, mode) {
+            var title = mode === 'deposit' ? 'Nạp tiền' : 'Rút tiền';
+            var html = '<div class="modal-title">' + title + '</div>'
+                + '<div style="margin-bottom:16px;"><label class="form-label">Số tiền</label><input type="number" id="txAmount" class="form-input" placeholder="Nhập số tiền" min="1000"></div>'
+                + '<div style="margin-bottom:16px;"><label class="form-label">Mô tả</label><input type="text" id="txDesc" class="form-input" placeholder="Mô tả (không bắt buộc)"></div>'
+                + '<div class="modal-actions">'
+                + '<button onclick="closeModal()" class="btn btn-outline">Hủy</button>'
+                + '<button onclick="processTx(' + accountId + ',\'' + mode + '\')" class="btn btn-primary">Xác nhận</button>'
+                + '</div>';
+            openModal(html);
+        }
+
+        function processTx(accountId, mode) {
+            var amount = document.getElementById('txAmount').value;
+            var desc = document.getElementById('txDesc').value || (mode === 'deposit' ? 'Admin nạp tiền' : 'Admin rút tiền');
+            if (!amount || parseFloat(amount) <= 0) { showToast('Vui lòng nhập số tiền hợp lệ', 'error'); return; }
+            closeModal();
+            apiFetch('/api/admin/accounts/' + accountId + '/' + mode, {
+                method: 'POST',
+                body: { amount: amount, description: desc }
+            }).then(function(res) {
+                if (res.ok) { showToast(res.data.message, 'success'); location.reload(); }
+                else { showToast(res.data.error || 'Lỗi', 'error'); }
+            });
+        }
     </script>
 </body>
 </html>

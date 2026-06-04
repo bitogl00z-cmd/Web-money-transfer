@@ -8,12 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.Optional;
 
 import static org.bytedeco.opencv.global.opencv_imgcodecs.imdecode;
 import static org.bytedeco.opencv.global.opencv_imgcodecs.IMREAD_COLOR;
 
 public class JavaCVFaceEngine {
     private static final Logger log = LoggerFactory.getLogger(JavaCVFaceEngine.class);
+    private static final double IDENTIFY_CONFIDENCE_THRESHOLD = 80.0;
     private final FaceDetector faceDetector;
     private final FaceRecognizer faceRecognizer;
     private final ImagePreprocessor preprocessor;
@@ -53,6 +55,26 @@ public class JavaCVFaceEngine {
         log.info("Face verify for userId={}: predictedLabel={}, confidence={}, match={}",
                 userId, result.label(), result.confidence(), match);
         return match;
+    }
+
+    public Optional<Long> identifyFace(byte[] imageBytes) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new IllegalArgumentException("imageBytes must not be null or empty");
+        }
+        if (!faceRecognizer.isTrained()) {
+            log.warn("LBPH model not trained yet");
+            return Optional.empty();
+        }
+        Mat source = decodeImage(imageBytes);
+        Mat faceRoi = faceDetector.cropLargestFace(source);
+        Mat processed = preprocessor.preprocess(faceRoi);
+        FaceRecognizer.RecognizerResult result = faceRecognizer.predict(processed);
+        if (result.confidence() < IDENTIFY_CONFIDENCE_THRESHOLD) {
+            log.info("Face identify: predictedLabel={}, confidence={}", result.label(), result.confidence());
+            return Optional.of((long) result.label());
+        }
+        log.warn("Face identify: no match, confidence={}", result.confidence());
+        return Optional.empty();
     }
 
     private Mat decodeImage(byte[] imageBytes) {

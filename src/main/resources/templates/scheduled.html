@@ -1,30 +1,210 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="fragments/layout :: head('Định kỳ')"></head>
+<head th:replace="fragments/layout :: head('Thanh toán định kỳ')"></head>
 <body>
     <nav th:replace="fragments/layout :: navbar('scheduled')"></nav>
     <aside th:replace="fragments/layout :: sidebar('scheduled')"></aside>
     <main class="main-content">
         <div class="page-header">
             <h1 class="page-title">⏰ Thanh toán định kỳ</h1>
-            <p class="page-subtitle">Quản lý các giao dịch tự động</p>
+            <p class="page-subtitle">Lên lịch chuyển tiền tự động</p>
         </div>
+
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">Tài khoản nguồn</div>
+            <div class="card-body">
+                <div id="accountInfo">
+                    <span style="font-size:0.85rem;color:var(--text-muted);">Đang tải...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">Tạo lịch mới</div>
+            <div class="card-body">
+                <form id="scheduleForm">
+                    <div class="form-group">
+                        <label class="form-label">Đến tài khoản</label>
+                        <input type="text" id="toAccount" class="form-input" placeholder="Số tài khoản người nhận" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Số tiền</label>
+                        <input type="number" id="amount" class="form-input" placeholder="0" min="1000" step="1000" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nội dung (tùy chọn)</label>
+                        <input type="text" id="description" class="form-input" placeholder="Ghi chú">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Ngày bắt đầu</label>
+                            <input type="date" id="scheduledDate" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Giờ</label>
+                            <input type="number" id="scheduledHour" class="form-input" placeholder="0-23" min="0" max="23" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phút</label>
+                            <input type="number" id="scheduledMinute" class="form-input" placeholder="0-59" min="0" max="59" required>
+                        </div>
+                    </div>
+                    <div class="form-group" id="endDateGroup" style="display:none;">
+                        <label class="form-label">Ngày kết thúc <small style="color:var(--text-muted);">(để trống nếu không)</small></label>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                            <div class="form-group">
+                                <input type="date" id="endDate" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <input type="number" id="endHour" class="form-input" placeholder="23" min="0" max="23">
+                            </div>
+                            <div class="form-group">
+                                <input type="number" id="endMinute" class="form-input" placeholder="59" min="0" max="59">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Lặp lại</label>
+                        <select id="frequency" class="form-input form-select" onchange="toggleEndDate()">
+                            <option value="ONE_TIME">Một lần</option>
+                            <option value="WEEKLY">Hàng tuần</option>
+                            <option value="MONTHLY">Hàng tháng</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top:8px;">📅 Tạo lịch</button>
+                </form>
+                <div id="scheduleMsg" class="form-message" style="display:none;margin-top:12px;"></div>
+            </div>
+        </div>
+
         <div class="card">
+            <div class="card-header">Lịch đã tạo</div>
             <div class="table-container">
-                <table class="table"><thead><tr><th>Đến tài khoản</th><th>Số tiền</th><th>Tần suất</th><th>Lần chạy tiếp</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="paymentsBody"></tbody></table>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Đến tài khoản</th>
+                            <th>Số tiền</th>
+                            <th>Lặp lại</th>
+                            <th>Chạy lúc</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsBody"></tbody>
+                </table>
             </div>
         </div>
     </main>
     <div th:replace="fragments/layout :: toast"></div>
     <div th:replace="fragments/layout :: scripts"></div>
     <script>
-        fetch('/api/scheduled-payments', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(data) {
-            var body = document.getElementById('paymentsBody');
-            if (data.length) {
-                data.forEach(function(p) { var row = body.insertRow(); row.innerHTML = '<td style="font-family:monospace;">' + p.toAccountNumber + '</td><td style="font-weight:600;">' + formatVND(p.amount) + '</td><td>' + p.frequency + '</td><td>' + p.nextRun + '</td><td><span class="badge ' + (p.status === 'ACTIVE' ? 'badge-success' : 'badge-gray') + '">' + p.status + '</span></td><td>' + (p.status === 'ACTIVE' ? '<button onclick="cancel(' + p.id + ')" class="btn btn-danger btn-sm">Hủy</button>' : '') + '</td>'; });
-            } else { body.innerHTML = '<tr><td colspan="6" class="empty">Chưa có thanh toán định kỳ</td></tr>'; }
+        function loadPayments() {
+            apiFetch('/api/scheduled-payments').then(function(r) {
+                if (!r.ok) return;
+                var body = document.getElementById('paymentsBody');
+                body.innerHTML = '';
+                if (!r.data.length) {
+                    body.innerHTML = '<tr><td colspan="6" class="empty">Chưa có thanh toán định kỳ</td></tr>';
+                    return;
+                }
+                r.data.forEach(function(p) {
+                    var row = body.insertRow();
+                    var runAt = p.nextRun ? new Date(p.nextRun[0], p.nextRun[1]-1, p.nextRun[2], p.nextRun[3], p.nextRun[4]) : null;
+                    var runStr = runAt ? runAt.toLocaleString('vi-VN', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+                    var freqLabel = {ONE_TIME:'Một lần',WEEKLY:'Hàng tuần',MONTHLY:'Hàng tháng'}[p.frequency] || p.frequency;
+                    var statusClass = {ACTIVE:'badge-success',COMPLETED:'badge-info',PAUSED:'badge-warning',CANCELLED:'badge-gray'}[p.status] || 'badge-gray';
+                    var statusLabel = {ACTIVE:'Đang chạy',COMPLETED:'Hoàn tất',PAUSED:'Tạm dừng',CANCELLED:'Đã hủy'}[p.status] || p.status;
+                    row.innerHTML = '<td style="font-family:monospace;">' + p.toAccountNumber + '</td>'
+                        + '<td style="font-weight:600;">' + formatVND(p.amount) + '</td>'
+                        + '<td>' + freqLabel + '</td>'
+                        + '<td>' + runStr + '</td>'
+                        + '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>'
+                        + '<td>' + (p.status === 'ACTIVE' ? '<button onclick="cancel(' + p.id + ')" class="btn btn-danger btn-sm">Hủy</button>' : '') + '</td>';
+                });
+            });
+        }
+
+        function loadBalance() {
+            apiFetch('/api/accounts').then(function(r) {
+                if (!r.ok || !r.data.length) return;
+                var a = r.data[0];
+                document.getElementById('accountInfo').innerHTML = '<span style="font-size:0.85rem;color:var(--text-muted);">' + a.accountNumber + '</span>'
+                    + '<div style="font-size:1.5rem;font-weight:700;color:var(--text);margin-top:2px;">' + formatVND(a.balance) + '</div>';
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('scheduleForm').reset();
+            var today = new Date();
+            document.getElementById('scheduledDate').value = today.toISOString().split('T')[0];
+            document.getElementById('scheduledHour').value = today.getHours();
+            document.getElementById('scheduledMinute').value = today.getMinutes();
+        }
+
+        function toggleEndDate() {
+            var freq = document.getElementById('frequency').value;
+            document.getElementById('endDateGroup').style.display = (freq === 'WEEKLY' || freq === 'MONTHLY') ? 'block' : 'none';
+        }
+
+        function cancel(id) {
+            apiFetch('/api/scheduled-payments/' + id, {method:'DELETE'}).then(function(r) {
+                if (r.ok) loadPayments();
+            });
+        }
+
+        document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var msg = document.getElementById('scheduleMsg');
+            msg.style.display = 'none';
+            var body = {
+                toAccountNumber: document.getElementById('toAccount').value.trim(),
+                amount: document.getElementById('amount').value,
+                description: document.getElementById('description').value.trim(),
+                scheduledDate: document.getElementById('scheduledDate').value,
+                scheduledHour: document.getElementById('scheduledHour').value,
+                scheduledMinute: document.getElementById('scheduledMinute').value,
+                frequency: document.getElementById('frequency').value
+            };
+            var freq = body.frequency;
+            if (freq === 'WEEKLY' || freq === 'MONTHLY') {
+                var ed = document.getElementById('endDate').value;
+                if (ed) {
+                    body.endDate = ed;
+                    body.endHour = document.getElementById('endHour').value || '23';
+                    body.endMinute = document.getElementById('endMinute').value || '59';
+                }
+            }
+            if (!body.scheduledDate || body.scheduledHour === '' || body.scheduledMinute === '') {
+                msg.textContent = 'Vui lòng nhập đầy đủ ngày giờ';
+                msg.style.display = 'block'; msg.style.background = '#fef2f2'; msg.style.color = '#991b1b';
+                return;
+            }
+            var h = parseInt(body.scheduledHour), m = parseInt(body.scheduledMinute);
+            if (h < 0 || h > 23 || m < 0 || m > 59) {
+                msg.textContent = 'Giờ (0-23) và phút (0-59) không hợp lệ';
+                msg.style.display = 'block'; msg.style.background = '#fef2f2'; msg.style.color = '#991b1b';
+                return;
+            }
+            apiFetch('/api/scheduled-payments', {method:'POST', body:JSON.stringify(body)}).then(function(r) {
+                if (r.ok) {
+                    msg.textContent = '✅ Đã tạo lịch thanh toán!';
+                    msg.style.display = 'block'; msg.style.background = '#d1fae5'; msg.style.color = '#065f46';
+                    resetForm();
+                    loadPayments();
+                } else {
+                    msg.textContent = '❌ ' + (r.data.error || 'Lỗi tạo lịch');
+                    msg.style.display = 'block'; msg.style.background = '#fef2f2'; msg.style.color = '#991b1b';
+                }
+            });
         });
-        function cancel(id) { fetch('/api/scheduled-payments/' + id, { method: 'DELETE', credentials: 'include' }).then(function() { location.reload(); }); }
+
+        (function() {
+            resetForm();
+            toggleEndDate();
+            loadBalance();
+            loadPayments();
+        })();
     </script>
 </body>
 </html>

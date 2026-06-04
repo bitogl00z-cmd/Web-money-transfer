@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Base64;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -62,5 +63,13 @@ public class FaceService {
         } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException | InterruptedException e) {
             throw new RuntimeException("Face verification failed", e);
         }
+    }
+
+    public User identifyFaceBase64Sync(String base64Image) {
+        byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+        Optional<Long> userIdOpt = javaCVFaceEngine.identifyFace(imageBytes);
+        Long userId = userIdOpt.orElseThrow(() -> new RuntimeException("Không nhận diện được khuôn mặt"));
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
     }
 }

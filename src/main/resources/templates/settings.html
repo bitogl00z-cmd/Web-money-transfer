@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('Cài đặt')"></head>
+<body>
+    <nav th:replace="fragments/layout :: navbar('settings')"></nav>
+    <aside th:replace="fragments/layout :: sidebar('settings')"></aside>
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">⚙️ Cài đặt</h1>
+            <p class="page-subtitle">Quản lý tài khoản và bảo mật</p>
+        </div>
+
+        <div class="tabs" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:0;flex-wrap:wrap;">
+            <button class="tab-btn active" data-tab="personal">👤 Cá nhân</button>
+            <button class="tab-btn" data-tab="security">🔒 Bảo mật</button>
+            <button class="tab-btn" data-tab="facelogin">📸 Đăng nhập nhanh</button>
+            <button class="tab-btn" data-tab="limits">💰 Hạn mức</button>
+            <button class="tab-btn" data-tab="notifications">🔔 Thông báo</button>
+            <button class="tab-btn" data-tab="language">🌐 Ngôn ngữ</button>
+        </div>
+
+        <div id="tab-personal" class="tab-content active">
+            <div class="card">
+                <div class="card-header"><div class="card-title">👤 Thông tin cá nhân</div></div>
+                <div class="card-body">
+                    <div class="form-group"><label class="form-label">Tên đăng nhập</label><input type="text" id="p-username" class="form-input" disabled></div>
+                    <div class="form-group"><label class="form-label">Họ và tên</label><input type="text" id="p-fullName" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">Email</label><input type="email" id="p-email" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">Số điện thoại</label><input type="tel" id="p-phone" class="form-input"></div>
+                    <div class="form-group" style="margin-bottom:12px;"><strong style="color:var(--text-muted);font-size:0.85rem;">Hạng thành viên</strong><br><span id="p-tier" class="badge badge-info">STANDARD</span></div>
+                    <button onclick="savePersonalInfo()" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-security" class="tab-content">
+            <div class="card" style="margin-bottom:16px;">
+                <div class="card-header"><div class="card-title">🔑 Đổi mật khẩu</div></div>
+                <div class="card-body">
+                    <div class="form-group"><label class="form-label">Mật khẩu cũ</label><input type="password" id="s-oldPassword" class="form-input" placeholder="••••••••"></div>
+                    <div class="form-group"><label class="form-label">Mật khẩu mới</label><input type="password" id="s-newPassword" class="form-input" placeholder="••••••••"></div>
+                    <div class="form-group"><label class="form-label">Xác nhận mật khẩu mới</label><input type="password" id="s-confirmPassword" class="form-input" placeholder="••••••••"></div>
+                    <button onclick="changePassword()" class="btn btn-primary">Đổi mật khẩu</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div class="card-title">🔐 Xác thực OTP</div></div>
+                <div class="card-body">
+                    <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+                        <input type="checkbox" id="s-otpEnabled" onchange="toggleOtp()"> Bật xác thực OTP khi đăng nhập và giao dịch
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-facelogin" class="tab-content">
+            <div class="card">
+                <div class="card-header"><div class="card-title">📸 Đăng nhập nhanh bằng gương mặt</div></div>
+                <div class="card-body">
+                    <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Đăng ký gương mặt để đăng nhập nhanh không cần mật khẩu và xác thực giao dịch trên 10.000.000₫.</p>
+                    <div id="f-faceStatus" style="margin-bottom:16px;font-size:0.9rem;"></div>
+                    <button id="f-registerFaceBtn" class="btn btn-primary btn-lg btn-full" onclick="registerFace()">📸 Đăng ký gương mặt</button>
+                    <div style="margin-top:16px;">
+                        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+                            <input type="checkbox" id="f-faceEnabled" onchange="toggleFace()"> Cho phép đăng nhập nhanh bằng gương mặt
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-limits" class="tab-content">
+            <div class="card">
+                <div class="card-header"><div class="card-title">💰 Hạn mức giao dịch</div></div>
+                <div class="card-body">
+                    <div style="margin-bottom:12px;"><strong style="color:var(--text-muted);font-size:0.85rem;">Hạng thành viên</strong><br><span id="l-tier" class="badge badge-info">STANDARD</span></div>
+                    <div style="margin-bottom:12px;"><strong style="color:var(--text-muted);font-size:0.85rem;">Ngưỡng xác thực gương mặt</strong><br>Giao dịch từ 10.000.000₫ trở lên yêu cầu xác thực gương mặt</div>
+                    <div><strong style="color:var(--text-muted);font-size:0.85rem;">Trạng thái</strong><br><span id="l-faceStatus">Chưa đăng ký gương mặt</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-notifications" class="tab-content">
+            <div class="card">
+                <div class="card-header"><div class="card-title">🔔 Thông báo</div></div>
+                <div class="card-body">
+                    <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+                        <input type="checkbox" id="n-emailNotifications" onchange="saveNotifications()"> Nhận thông báo giao dịch qua email
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-language" class="tab-content">
+            <div class="card">
+                <div class="card-header"><div class="card-title">🌐 Ngôn ngữ</div></div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Ngôn ngữ hiển thị</label>
+                        <select id="l-language" class="form-input" onchange="saveLanguage()">
+                            <option value="vi">Tiếng Việt</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <div th:replace="fragments/layout :: toast"></div>
+    <div th:replace="fragments/layout :: scripts"></div>
+    <style>
+        .tab-btn { padding:10px 20px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;font-size:0.9rem;font-weight:500;border-radius:var(--radius-sm) var(--radius-sm) 0 0;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s;}
+        .tab-btn:hover { color:var(--text);background:var(--bg);}
+        .tab-btn.active { color:var(--primary);border-bottom-color:var(--primary);background:transparent;}
+        .tab-content { display:none;}
+        .tab-content.active { display:block;}
+    </style>
+    <script>
+        var userData = null;
+
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+                document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        fetch('/api/users/profile', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(u) {
+            userData = u;
+            document.getElementById('p-username').value = u.username;
+            document.getElementById('p-fullName').value = u.fullName || '';
+            document.getElementById('p-email').value = u.email || '';
+            document.getElementById('p-phone').value = u.phone || '';
+            document.getElementById('p-tier').textContent = u.tier || 'STANDARD';
+            document.getElementById('l-tier').textContent = u.tier || 'STANDARD';
+            document.getElementById('s-otpEnabled').checked = u.otpEnabled;
+            document.getElementById('n-emailNotifications').checked = u.emailNotifications !== false;
+            document.getElementById('l-language').value = u.language || 'vi';
+            var faceEnabled = u.faceEnabled;
+            document.getElementById('f-faceEnabled').checked = faceEnabled;
+            document.getElementById('f-faceStatus').innerHTML = faceEnabled ? '<span class="badge badge-success">✓ Đã đăng ký gương mặt</span>' : '<span class="badge badge-gray">✗ Chưa đăng ký</span>';
+            document.getElementById('f-registerFaceBtn').textContent = faceEnabled ? '📸 Cập nhật gương mặt' : '📸 Đăng ký gương mặt';
+            document.getElementById('l-faceStatus').innerHTML = faceEnabled ? '<span class="badge badge-success">✓ Đã đăng ký</span>' : '<span class="badge badge-gray">✗ Chưa đăng ký</span>';
+        });
+
+        function savePersonalInfo() {
+            var body = { fullName: document.getElementById('p-fullName').value, email: document.getElementById('p-email').value, phone: document.getElementById('p-phone').value };
+            apiFetch('/api/users/profile', { method: 'PUT', body: body }).then(function(res) {
+                if (res.ok) { showToast('Cập nhật thông tin thành công', 'success'); } else { showToast(res.data.error || 'Lỗi', 'error'); }
+            });
+        }
+
+        function changePassword() {
+            var oldPw = document.getElementById('s-oldPassword').value;
+            var newPw = document.getElementById('s-newPassword').value;
+            var confirmPw = document.getElementById('s-confirmPassword').value;
+            if (!oldPw || !newPw || !confirmPw) { showToast('Vui lòng điền đầy đủ thông tin', 'error'); return; }
+            if (newPw !== confirmPw) { showToast('Mật khẩu mới không khớp', 'error'); return; }
+            if (newPw.length < 6) { showToast('Mật khẩu phải có ít nhất 6 ký tự', 'error'); return; }
+            apiFetch('/api/auth/change-password', { method: 'POST', body: { oldPassword: oldPw, newPassword: newPw } }).then(function(res) {
+                if (res.ok) { showToast('Đổi mật khẩu thành công', 'success'); document.getElementById('s-oldPassword').value = ''; document.getElementById('s-newPassword').value = ''; document.getElementById('s-confirmPassword').value = ''; }
+                else { showToast(res.data.error || 'Lỗi', 'error'); }
+            });
+        }
+
+        function toggleOtp() {
+            apiFetch('/api/users/profile', { method: 'PUT', body: { otpEnabled: document.getElementById('s-otpEnabled').checked.toString() } }).then(function(res) {
+                if (res.ok) { showToast('Đã cập nhật', 'success'); } else { showToast('Lỗi', 'error'); }
+            });
+        }
+
+        function toggleFace() {
+            var enabled = document.getElementById('f-faceEnabled').checked;
+            apiFetch('/api/users/profile', { method: 'PUT', body: { faceEnabled: enabled.toString() } }).then(function(res) {
+                if (res.ok) { showToast(enabled ? 'Đã bật đăng nhập nhanh' : 'Đã tắt đăng nhập nhanh', 'success'); } else { showToast('Lỗi', 'error'); }
+            });
+        }
+
+        function registerFace() {
+            openCamera(async function(base64) {
+                var btn = document.getElementById('f-registerFaceBtn');
+                btn.disabled = true; btn.textContent = 'Đang xử lý...';
+                var res = await apiFetch('/api/face/register', { method: 'POST', body: { faceImage: base64 } });
+                if (res.ok) {
+                    showToast('Đăng ký gương mặt thành công!', 'success');
+                    document.getElementById('f-faceStatus').innerHTML = '<span class="badge badge-success">✓ Đã đăng ký gương mặt</span>';
+                    document.getElementById('f-registerFaceBtn').textContent = '📸 Cập nhật gương mặt';
+                    document.getElementById('l-faceStatus').innerHTML = '<span class="badge badge-success">✓ Đã đăng ký</span>';
+                    document.getElementById('f-faceEnabled').checked = true;
+                } else { showToast(res.data.error || 'Đăng ký thất bại', 'error'); }
+                btn.disabled = false;
+            });
+        }
+
+        function saveNotifications() {
+            apiFetch('/api/users/profile', { method: 'PUT', body: { emailNotifications: document.getElementById('n-emailNotifications').checked.toString() } }).then(function(res) {
+                if (res.ok) { showToast('Đã lưu', 'success'); } else { showToast('Lỗi', 'error'); }
+            });
+        }
+
+        function saveLanguage() {
+            apiFetch('/api/users/profile', { method: 'PUT', body: { language: document.getElementById('l-language').value } }).then(function(res) {
+                if (res.ok) { showToast('Đã lưu ngôn ngữ', 'success'); } else { showToast('Lỗi', 'error'); }
+            });
+        }
+    </script>
+</body>
+</html>

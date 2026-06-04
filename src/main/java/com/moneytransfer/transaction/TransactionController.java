@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -122,12 +123,14 @@ public class TransactionController {
     @GetMapping("/history")
     public ResponseEntity<?> getHistory(Authentication auth,
                                          @RequestParam(defaultValue = "0") int page,
-                                         @RequestParam(defaultValue = "20") int size) {
+                                         @RequestParam(defaultValue = "20") int size,
+                                         @RequestParam(defaultValue = "false") boolean all) {
         Claims claims = (Claims) auth.getDetails();
         Long userId = ((Integer) claims.get("userId")).longValue();
         List<Account> accounts = accountService.getUserAccounts(userId);
         List<Long> accountIds = accounts.stream().map(Account::getId).collect(Collectors.toList());
-        Page<Transaction> history = transactionService.getHistory(accountIds, PageRequest.of(page, size));
+        LocalDateTime cutoff = all ? null : LocalDateTime.now().minusMonths(3);
+        Page<Transaction> history = transactionService.getHistory(accountIds, cutoff, PageRequest.of(page, size));
         return ResponseEntity.ok(history);
     }
 

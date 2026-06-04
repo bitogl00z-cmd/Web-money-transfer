@@ -13,6 +13,7 @@ com\moneytransfer\account\Account.class
 com\moneytransfer\config\RestTemplateConfig.class
 com\moneytransfer\face\FaceRecognizer.class
 com\moneytransfer\admin\AdminController.class
+com\moneytransfer\scheduled\InsufficientBalanceException.class
 com\moneytransfer\WebController.class
 com\moneytransfer\face\LBPHModelManager.class
 com\moneytransfer\user\User.class

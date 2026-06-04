@@ -31,6 +31,8 @@ public class UserService {
         if (updates.containsKey("email")) user.setEmail(updates.get("email"));
         if (updates.containsKey("otpEnabled")) user.setOtpEnabled(Boolean.parseBoolean(updates.get("otpEnabled")));
         if (updates.containsKey("faceEnabled")) user.setFaceEnabled(Boolean.parseBoolean(updates.get("faceEnabled")));
+        if (updates.containsKey("emailNotifications")) user.setEmailNotifications(Boolean.parseBoolean(updates.get("emailNotifications")));
+        if (updates.containsKey("language")) user.setLanguage(updates.get("language"));
         userRepository.save(user);
     }
 }

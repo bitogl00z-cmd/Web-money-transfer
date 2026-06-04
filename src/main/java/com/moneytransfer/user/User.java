@@ -54,6 +54,12 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(nullable = false)
+    private boolean emailNotifications = true;
+
+    @Column(length = 5)
+    private String language = "vi";
+
     public User() {}
 
     public User(String username, String passwordHash, String email, String fullName) {
@@ -93,4 +99,8 @@ public class User {
     public void setFailedAttempts(int failedAttempts) { this.failedAttempts = failedAttempts; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public boolean isEmailNotifications() { return emailNotifications; }
+    public void setEmailNotifications(boolean emailNotifications) { this.emailNotifications = emailNotifications; }
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
 }

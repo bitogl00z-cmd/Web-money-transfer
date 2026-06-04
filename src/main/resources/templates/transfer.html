@@ -12,11 +12,11 @@
         <div class="card" style="max-width:520px;">
             <div id="message" style="display:none;padding:12px 16px;border-radius:var(--radius-sm);font-size:0.9rem;margin-bottom:16px;"></div>
             <form id="transferForm">
-                <div class="form-group">
-                    <label class="form-label">Từ tài khoản</label>
-                    <select id="fromAccount" class="form-input form-select" required>
-                        <option value="">Chọn tài khoản nguồn</option>
-                    </select>
+                <div class="card" style="background:var(--bg);padding:16px;border-radius:var(--radius-sm);margin-bottom:20px;">
+                    <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:4px;">Tài khoản nguồn</div>
+                    <div id="accountInfo">
+                        <span style="font-size:0.85rem;color:var(--text-muted);">Đang tải...</span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Đến tài khoản</label>
@@ -40,18 +40,21 @@
     <div th:replace="fragments/layout :: scripts"></div>
     <script>
         var currentFaceToken = null;
+        var userFaceEnabled = false;
+        var currentAccount = null;
 
-        fetch('/api/accounts', { credentials: 'include' })
-            .then(function(r) { return r.json(); })
-            .then(function(accounts) {
-                var sel = document.getElementById('fromAccount');
-                accounts.forEach(function(a) {
-                    var opt = document.createElement('option');
-                    opt.value = a.id;
-                    opt.textContent = a.accountNumber + ' (' + formatVND(a.balance) + ')';
-                    sel.appendChild(opt);
-                });
-            });
+        apiFetch('/api/users/profile').then(function(res) {
+            if (res.ok) { userFaceEnabled = res.data.faceEnabled; }
+        });
+
+        apiFetch('/api/accounts').then(function(res) {
+            if (res.ok && res.data.length > 0) {
+                currentAccount = res.data[0];
+                var info = document.getElementById('accountInfo');
+                info.innerHTML = '<span style="font-size:0.85rem;color:var(--text-muted);">' + currentAccount.accountNumber + '</span>'
+                    + '<div style="font-size:1.5rem;font-weight:700;color:var(--text);margin-top:2px;">' + formatVND(currentAccount.balance) + '</div>';
+            }
+        });
 
         document.getElementById('transferForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -62,7 +65,7 @@
 
             var amount = parseFloat(document.getElementById('amount').value);
             var body = {
-                fromAccountId: parseInt(document.getElementById('fromAccount').value),
+                fromAccountId: currentAccount ? currentAccount.id : 0,
                 toAccountNumber: document.getElementById('toAccount').value,
                 amount: amount,
                 description: document.getElementById('description').value
@@ -70,6 +73,13 @@
 
             if (amount > 10000000) {
                 if (!currentFaceToken) {
+                    if (!userFaceEnabled) {
+                        msg.style.display = 'block';
+                        msg.style.background = '#fce4ec'; msg.style.color = 'var(--danger)';
+                        msg.innerHTML = '❌ Bạn chưa cập nhật gương mặt. Vui lòng vào <a href="/settings" style="color:var(--primary);font-weight:600;">Cài đặt</a> để đăng ký.';
+                        btn.disabled = false; btn.textContent = '💸 Chuyển tiền';
+                        return;
+                    }
                     msg.style.display = 'block';
                     msg.style.background = '#fef3c7'; msg.style.color = '#92400e';
                     msg.textContent = 'Giao dịch trên 10.000.000₫ cần xác thực gương mặt. Đang mở camera...';
@@ -106,16 +116,12 @@
                 msg.textContent = '✅ Chuyển tiền thành công! Mã GD: ' + res.data.transactionCode;
                 document.getElementById('transferForm').reset();
                 currentFaceToken = null;
-                fetch('/api/accounts', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(accounts) {
-                    var sel = document.getElementById('fromAccount');
-                    sel.innerHTML = '<option value="">Chọn tài khoản nguồn</option>';
-                    accounts.forEach(function(a) {
-                        var opt = document.createElement('option');
-                        opt.value = a.id;
-                        opt.textContent = a.accountNumber + ' (' + formatVND(a.balance) + ')';
-                        sel.appendChild(opt);
-                    });
-                });
+                if (currentAccount) {
+                    currentAccount.balance -= amount;
+                    var info = document.getElementById('accountInfo');
+                    info.innerHTML = '<span style="font-size:0.85rem;color:var(--text-muted);">' + currentAccount.accountNumber + '</span>'
+                        + '<div style="font-size:1.5rem;font-weight:700;color:var(--text);margin-top:2px;">' + formatVND(currentAccount.balance) + '</div>';
+                }
             } else {
                 msg.style.display = 'block';
                 msg.style.background = '#fce4ec'; msg.style.color = 'var(--danger)';

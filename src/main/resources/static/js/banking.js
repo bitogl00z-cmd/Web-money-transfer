@@ -104,6 +104,15 @@ async function apiFetch(url, options) {
     }
     try {
         var res = await fetch(url, options);
+        if (res.status === 401 && !url.includes('/api/auth/refresh-token') && !url.includes('/api/auth/login')) {
+            var refreshRes = await fetch('/api/auth/refresh-token', { method: 'POST', credentials: 'include' });
+            if (refreshRes.ok) {
+                res = await fetch(url, options);
+            } else {
+                window.location.href = '/login';
+                return { ok: false, status: 401, data: { error: 'Session expired' } };
+            }
+        }
         var data = await res.json();
         return { ok: res.ok, status: res.status, data: data };
     } catch (e) {
@@ -113,6 +122,41 @@ async function apiFetch(url, options) {
 
 function toggleSidebar() {
     document.querySelector('.sidebar').classList.toggle('open');
+}
+
+function showNotificationBox(title, message, type) {
+    var container = document.getElementById('notificationContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notificationContainer';
+        container.style.cssText = 'position:fixed;bottom:20px;left:240px;z-index:10000;display:flex;flex-direction:column;gap:8px;max-width:380px;';
+        document.body.appendChild(container);
+    }
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:16px;animation:slideIn 0.3s ease;border-left:4px solid ' + (type === 'success' ? '#10b981' : '#ef4444') + ';';
+    box.innerHTML = '<div style="font-weight:600;font-size:0.95rem;margin-bottom:4px;">' + title + '</div><div style="font-size:0.85rem;color:#666;">' + message + '</div>';
+    container.appendChild(box);
+    setTimeout(function() { box.style.opacity = '0'; box.style.transition = 'opacity 0.3s'; setTimeout(function() { box.remove(); }, 300); }, 8000);
+}
+
+var styleSheet = document.createElement('style');
+styleSheet.textContent = '@keyframes slideIn { from { transform:translateX(-100%);opacity:0; } to { transform:translateX(0);opacity:1; } }';
+document.head.appendChild(styleSheet);
+
+var stompClient = null;
+function connectWebSocket(userId) {
+    if (!userId || stompClient && stompClient.connected) return;
+    var socket = new SockJS('/ws/notifications');
+    stompClient = Stomp.over(socket);
+    stompClient.connect({}, function() {
+        stompClient.subscribe('/topic/notifications/' + userId, function(msg) {
+            var data = JSON.parse(msg.body);
+            var extra = data.transactionCode ? '<br><small style="color:#999;">GD: ' + data.transactionCode + '</small>' : '';
+            var bal = data.balance ? '<br><strong style="color:#059669;">' + data.balance + '</strong>' : '';
+            var isSuccess = data.type === 'SCHEDULED_PAYMENT';
+            showNotificationBox(data.title, data.message + bal + extra, isSuccess ? 'success' : 'error');
+        });
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {

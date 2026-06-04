@@ -21,7 +21,7 @@
             <button type="submit" id="loginBtn" class="btn btn-primary btn-lg btn-full">Đăng nhập</button>
         </form>
         <div style="text-align:center;margin:20px 0;color:var(--text-muted);font-size:0.85rem;">— hoặc —</div>
-        <button id="faceLoginBtn" class="btn btn-outline btn-lg btn-full" onclick="openFaceLogin()">
+        <button id="faceLoginBtn" class="btn btn-outline btn-lg btn-full" onclick="faceLogin()">
             📸 Đăng nhập bằng gương mặt
         </button>
         <p style="text-align:center;margin-top:24px;font-size:0.85rem;color:var(--text-muted);">
@@ -45,13 +45,13 @@
             btn.disabled = false; btn.textContent = 'Đăng nhập';
         });
 
-        async function openFaceLogin() {
+        async function faceLogin() {
             openCamera(async function(base64) {
                 var btn = document.getElementById('faceLoginBtn');
                 btn.disabled = true; btn.textContent = 'Đang xác thực...';
-                var res = await apiFetch('/api/auth/face-login', {
+                var res = await apiFetch('/api/auth/face-quick-login', {
                     method: 'POST',
-                    body: { username: document.getElementById('username').value, faceImage: base64 }
+                    body: { faceImage: base64 }
                 });
                 if (res.ok) { window.location.href = '/dashboard'; }
                 else { showToast(res.data.error || 'Xác thực thất bại', 'error'); }

@@ -2,7 +2,6 @@ package com.moneytransfer.scheduled;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,7 +28,13 @@ public class ScheduledPayment {
     private PaymentFrequency frequency;
 
     @Column(nullable = false)
-    private LocalDate nextRun;
+    private LocalDateTime nextRun;
+
+    @Column(nullable = false)
+    private LocalDateTime startDate;
+
+    @Column
+    private LocalDateTime endDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -52,8 +57,12 @@ public class ScheduledPayment {
     public void setDescription(String description) { this.description = description; }
     public PaymentFrequency getFrequency() { return frequency; }
     public void setFrequency(PaymentFrequency frequency) { this.frequency = frequency; }
-    public LocalDate getNextRun() { return nextRun; }
-    public void setNextRun(LocalDate nextRun) { this.nextRun = nextRun; }
+    public LocalDateTime getNextRun() { return nextRun; }
+    public void setNextRun(LocalDateTime nextRun) { this.nextRun = nextRun; }
+    public LocalDateTime getStartDate() { return startDate; }
+    public void setStartDate(LocalDateTime startDate) { this.startDate = startDate; }
+    public LocalDateTime getEndDate() { return endDate; }
+    public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
     public PaymentStatus getStatus() { return status; }
     public void setStatus(PaymentStatus status) { this.status = status; }
     public LocalDateTime getCreatedAt() { return createdAt; }

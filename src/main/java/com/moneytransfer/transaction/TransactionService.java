@@ -8,14 +8,18 @@ import com.moneytransfer.audit.AuditLog;
 import com.moneytransfer.audit.AuditLogRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
@@ -25,15 +29,18 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final AccountService accountService;
     private final AuditLogRepository auditLogRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public TransactionService(AccountRepository accountRepository,
                               TransactionRepository transactionRepository,
                               AccountService accountService,
-                              AuditLogRepository auditLogRepository) {
+                              AuditLogRepository auditLogRepository,
+                              SimpMessagingTemplate messagingTemplate) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.accountService = accountService;
         this.auditLogRepository = auditLogRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Transactional
@@ -79,6 +86,27 @@ public class TransactionService {
 
         auditLogRepository.save(new AuditLog(userId, "TRANSFER",
                 "Transferred " + amount + " from " + fromAccountId + " to " + toAccountId, ip));
+
+        String formattedAmount = NumberFormat.getNumberInstance(Locale.of("vi", "VN")).format(amount) + "₫";
+        String formattedFromBalance = NumberFormat.getNumberInstance(Locale.of("vi", "VN")).format(from.getBalance()) + "₫";
+        String formattedToBalance = NumberFormat.getNumberInstance(Locale.of("vi", "VN")).format(to.getBalance()) + "₫";
+        String time = LocalDateTime.now().toString();
+        messagingTemplate.convertAndSend("/topic/notifications/" + from.getUserId(), Map.of(
+                "type", "TRANSFER_SENT",
+                "title", "💸 Đã chuyển tiền",
+                "message", "Đã chuyển " + formattedAmount + " đến tài khoản " + to.getAccountNumber(),
+                "balance", "Số dư: " + formattedFromBalance,
+                "transactionCode", tx.getTransactionCode(),
+                "time", time
+        ));
+        messagingTemplate.convertAndSend("/topic/notifications/" + to.getUserId(), Map.of(
+                "type", "TRANSFER_RECEIVED",
+                "title", "💰 Nhận tiền",
+                "message", "Bạn vừa nhận " + formattedAmount + " từ tài khoản " + from.getAccountNumber(),
+                "balance", "Số dư: " + formattedToBalance,
+                "transactionCode", tx.getTransactionCode(),
+                "time", time
+        ));
 
         return tx;
     }
@@ -132,6 +160,16 @@ public class TransactionService {
             return Page.empty();
         }
         return transactionRepository.findByFromAccountIdInOrToAccountIdInOrderByCreatedAtDesc(accountIds, accountIds, pageable);
+    }
+
+    public Page<Transaction> getHistory(List<Long> accountIds, LocalDateTime cutoff, Pageable pageable) {
+        if (accountIds.isEmpty()) {
+            return Page.empty();
+        }
+        if (cutoff == null) {
+            return getHistory(accountIds, pageable);
+        }
+        return transactionRepository.findByFromAccountIdInOrToAccountIdInAndCreatedAtAfterOrderByCreatedAtDesc(accountIds, accountIds, cutoff, pageable);
     }
 
     public List<Transaction> getHistoryBetween(Long accountId, LocalDateTime from, LocalDateTime to) {

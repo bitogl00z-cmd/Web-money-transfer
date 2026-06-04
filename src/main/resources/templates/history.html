@@ -7,7 +7,11 @@
     <main class="main-content">
         <div class="page-header">
             <h1 class="page-title">📋 Lịch sử giao dịch</h1>
-            <p class="page-subtitle">Xem tất cả giao dịch đã thực hiện</p>
+            <p class="page-subtitle">Tra cứu giao dịch</p>
+        </div>
+        <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            <span id="rangeLabel">📅 3 tháng gần nhất</span>
+            <button onclick="loadAll()" id="allBtn" class="btn btn-sm btn-secondary">Xem tất cả</button>
         </div>
         <div class="card">
             <div class="table-container">
@@ -21,15 +25,24 @@
     <div th:replace="fragments/layout :: toast"></div>
     <div th:replace="fragments/layout :: scripts"></div>
     <script>
-        fetch('/api/transactions/history?page=0&size=50', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(data) {
-            var body = document.getElementById('txBody');
-            if (data.content && data.content.length) {
-                data.content.forEach(function(tx) {
-                    var row = body.insertRow();
-                    row.innerHTML = '<td style="font-family:monospace;font-size:0.85rem;">' + tx.transactionCode + '</td><td style="font-weight:600;">' + formatVND(tx.amount) + '</td><td><span class="badge badge-info">' + tx.type + '</span></td><td>' + (tx.description || '') + '</td><td>' + formatDate(tx.createdAt) + '</td>';
-                });
-            } else { body.innerHTML = '<tr><td colspan="5" class="empty">Chưa có giao dịch nào</td></tr>'; }
-        }).catch(function() { showToast('Không thể tải lịch sử', 'error'); });
+        function loadHistory(all) {
+            var url = '/api/transactions/history?page=0&size=50' + (all ? '&all=true' : '');
+            document.getElementById('rangeLabel').textContent = all ? '📅 Tất cả giao dịch' : '📅 3 tháng gần nhất';
+            document.getElementById('allBtn').textContent = all ? '3 tháng gần nhất' : 'Xem tất cả';
+            document.getElementById('allBtn').onclick = all ? function(){loadHistory(false)} : function(){loadAll()};
+            fetch(url, { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(data) {
+                var body = document.getElementById('txBody');
+                body.innerHTML = '';
+                if (data.content && data.content.length) {
+                    data.content.forEach(function(tx) {
+                        var row = body.insertRow();
+                        row.innerHTML = '<td style="font-family:monospace;font-size:0.85rem;">' + tx.transactionCode + '</td><td style="font-weight:600;">' + formatVND(tx.amount) + '</td><td><span class="badge badge-info">' + tx.type + '</span></td><td>' + (tx.description || '') + '</td><td>' + formatDate(tx.createdAt) + '</td>';
+                    });
+                } else { body.innerHTML = '<tr><td colspan="5" class="empty">Chưa có giao dịch nào</td></tr>'; }
+            }).catch(function() { showToast('Không thể tải lịch sử', 'error'); });
+        }
+        function loadAll() { loadHistory(true); }
+        loadHistory(false);
     </script>
 </body>
 </html>

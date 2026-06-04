@@ -26,27 +26,33 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        return uri.equals("/favicon.ico") || uri.startsWith("/css/") || uri.startsWith("/js/") || uri.startsWith("/img/");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = extractToken(request);
 
         if (token != null) {
             if (blacklistService.isBlacklisted(token)) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
-            }
-            try {
-                Claims claims = jwtUtil.validateToken(token);
-                String role = claims.get("role", String.class);
-                List<SimpleGrantedAuthority> authorities = role != null
-                        ? List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                        : Collections.emptyList();
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(claims.getSubject(), null, authorities);
-                auth.setDetails(claims);
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            } catch (Exception e) {
                 SecurityContextHolder.clearContext();
+            } else {
+                try {
+                    Claims claims = jwtUtil.validateToken(token);
+                    String role = claims.get("role", String.class);
+                    List<SimpleGrantedAuthority> authorities = role != null
+                            ? List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                            : Collections.emptyList();
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(claims.getSubject(), null, authorities);
+                    auth.setDetails(claims);
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                } catch (Exception e) {
+                    SecurityContextHolder.clearContext();
+                }
             }
         }
         filterChain.doFilter(request, response);

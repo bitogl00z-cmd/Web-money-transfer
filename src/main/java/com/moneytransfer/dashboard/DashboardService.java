@@ -66,9 +66,20 @@ public class DashboardService {
             chartData.add(point);
         }
 
+        List<Map<String, Object>> accountInfo = new ArrayList<>();
+        for (Account a : accounts) {
+            Map<String, Object> info = new HashMap<>();
+            info.put("id", a.getId());
+            info.put("accountNumber", a.getAccountNumber());
+            info.put("balance", a.getBalance());
+            info.put("status", a.getStatus());
+            accountInfo.add(info);
+        }
+
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalBalance", totalBalance);
         stats.put("accountCount", accounts.size());
+        stats.put("accounts", accountInfo);
         stats.put("recentTransactions", recentTransactions);
         stats.put("chartData", chartData);
         return stats;

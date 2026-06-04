@@ -2,6 +2,8 @@ package com.moneytransfer.face;
 
 import com.moneytransfer.auth.JwtUtil;
 import io.jsonwebtoken.Claims;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 @RestController
 @RequestMapping("/api/face")
 public class FaceController {
+    private static final Logger log = LoggerFactory.getLogger(FaceController.class);
     private final FaceService faceService;
     private final JwtUtil jwtUtil;
 
@@ -39,6 +42,7 @@ public class FaceController {
             String msg = faceService.registerFaceSync(userId, faceImage);
             return ResponseEntity.ok(Map.of("message", msg));
         } catch (Exception e) {
+            log.error("Face register failed for user: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
@@ -55,6 +59,7 @@ public class FaceController {
             boolean matched = faceService.verifyFaceBase64Sync(userId, faceImage);
             return ResponseEntity.ok(Map.of("matched", (Object) matched));
         } catch (Exception e) {
+            log.error("Face verify failed for user: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(Map.of("error", (Object) e.getMessage()));
         }
     }

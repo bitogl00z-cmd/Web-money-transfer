@@ -9,7 +9,10 @@ import com.moneytransfer.user.UserRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import io.jsonwebtoken.Claims;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -22,15 +25,18 @@ public class AuthController {
     private final FaceService faceService;
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthController(AuthService authService, JwtUtil jwtUtil,
                           FaceService faceService, UserRepository userRepository,
-                          AuditLogRepository auditLogRepository) {
+                          AuditLogRepository auditLogRepository,
+                          PasswordEncoder passwordEncoder) {
         this.authService = authService;
         this.jwtUtil = jwtUtil;
         this.faceService = faceService;
         this.userRepository = userRepository;
         this.auditLogRepository = auditLogRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/register")
@@ -118,6 +124,65 @@ public class AuthController {
             return ResponseEntity.ok(Map.of("message", "Face login successful", "userId", user.getId()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Face login failed"));
+        }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(Authentication auth, @RequestBody Map<String, String> body,
+                                             HttpServletResponse response) {
+        try {
+            Claims claims = (Claims) auth.getDetails();
+            Long userId = ((Integer) claims.get("userId")).longValue();
+            String oldPassword = body.get("oldPassword");
+            String newPassword = body.get("newPassword");
+            if (oldPassword == null || newPassword == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Old password and new password are required"));
+            }
+            if (newPassword.length() < 6) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Mật khẩu mới phải có ít nhất 6 ký tự"));
+            }
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Mật khẩu cũ không đúng"));
+            }
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/face-quick-login")
+    public ResponseEntity<?> quickFaceLogin(@RequestBody Map<String, String> body,
+                                             HttpServletRequest httpRequest,
+                                             HttpServletResponse response) {
+        try {
+            String faceImage = body.get("faceImage");
+            if (faceImage == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "faceImage is required"));
+            }
+            User user = faceService.identifyFaceBase64Sync(faceImage);
+            if (user.isLocked()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Tài khoản đã bị khóa"));
+            }
+            if (!user.isFaceEnabled()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Chưa đăng ký gương mặt"));
+            }
+            user.setFailedAttempts(0);
+            userRepository.save(user);
+
+            String ip = httpRequest.getRemoteAddr();
+            auditLogRepository.save(new AuditLog(user.getId(), "FACE_LOGIN", "Quick face login successful", ip));
+
+            String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getUsername(), user.getRole().name());
+            String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getUsername(), user.getRole().name());
+            authService.setAuthCookies(response, accessToken, refreshToken);
+
+            return ResponseEntity.ok(Map.of("message", "Đăng nhập thành công", "userId", user.getId()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 

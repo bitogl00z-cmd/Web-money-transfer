@@ -30,7 +30,9 @@ public class UserController {
                         "phone", user.getPhone() != null ? user.getPhone() : "",
                         "tier", user.getTier().name(),
                         "otpEnabled", user.isOtpEnabled(),
-                        "faceEnabled", user.isFaceEnabled()
+                        "faceEnabled", user.isFaceEnabled(),
+                        "emailNotifications", user.isEmailNotifications(),
+                        "language", user.getLanguage() != null ? user.getLanguage() : "vi"
                 )))
                 .orElse(ResponseEntity.notFound().build());
     }
