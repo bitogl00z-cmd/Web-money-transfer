@@ -6,3 +6,4 @@ com\moneytransfer\face\LBPHModelManagerTest.class
 com\moneytransfer\face\FaceRecognizerTest.class
 com\moneytransfer\transaction\TransactionServiceTest.class
 com\moneytransfer\auth\JwtUtilTest.class
+com\moneytransfer\face\FaceServiceTest.class

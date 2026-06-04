@@ -51,6 +51,7 @@ app:
     bucket: face-images
   face:
     thread-pool-size: 4
+    model-dir: ${FACE_MODEL_DIR:${user.home}/.money-transfer}
   compreface:
     url: http://localhost:8000
     api-key: ${COMPREFACE_API_KEY:00000000-0000-0000-0000-000000000000}

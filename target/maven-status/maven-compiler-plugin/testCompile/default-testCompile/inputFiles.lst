@@ -4,5 +4,6 @@ C:\Users\Public\money-transfer\src\test\java\com\moneytransfer\MoneyTransferAppl
 C:\Users\Public\money-transfer\src\test\java\com\moneytransfer\face\LBPHModelManagerTest.java
 C:\Users\Public\money-transfer\src\test\java\com\moneytransfer\face\FaceDetectorTest.java
 C:\Users\Public\money-transfer\src\test\java\com\moneytransfer\face\ImagePreprocessorTest.java
+C:\Users\Public\money-transfer\src\test\java\com\moneytransfer\face\FaceServiceTest.java
 C:\Users\Public\money-transfer\src\test\java\com\moneytransfer\transaction\TransactionServiceTest.java
 C:\Users\Public\money-transfer\src\test\java\com\moneytransfer\auth\JwtUtilTest.java
