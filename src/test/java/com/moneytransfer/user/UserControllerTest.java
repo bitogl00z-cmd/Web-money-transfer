@@ -31,6 +31,19 @@ class UserControllerTest {
     @MockBean
     private com.moneytransfer.auth.JwtAuthFilter jwtAuthFilter;
 
+    private Claims mockClaims(Long userId) {
+        Claims claims = org.mockito.Mockito.mock(Claims.class);
+        when(claims.get("userId")).thenReturn(userId.intValue());
+        return claims;
+    }
+
+    private UsernamePasswordAuthenticationToken createAuth(String username, Long userId) {
+        Claims claims = mockClaims(userId);
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(username, null);
+        auth.setDetails(claims);
+        return auth;
+    }
+
     @Test
     void getProfile_avatarUrlNull_returnsEmptyString() throws Exception {
         User user = new User();
@@ -41,13 +54,7 @@ class UserControllerTest {
         user.setAvatarUrl(null);
         when(userService.findById(2L)).thenReturn(Optional.of(user));
 
-        Claims claims = org.mockito.Mockito.mock(Claims.class);
-        when(claims.get("userId")).thenReturn(2);
-
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("user2", null);
-        auth.setDetails(claims);
-
-        mockMvc.perform(get("/api/users/profile").principal(auth))
+        mockMvc.perform(get("/api/users/profile").principal(createAuth("user2", 2L)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.avatarUrl").value(""));
     }
@@ -56,13 +63,7 @@ class UserControllerTest {
     void getProfile_userNotFound_returns404() throws Exception {
         when(userService.findById(99L)).thenReturn(Optional.empty());
 
-        Claims claims = org.mockito.Mockito.mock(Claims.class);
-        when(claims.get("userId")).thenReturn(99);
-
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("nonexistent", null);
-        auth.setDetails(claims);
-
-        mockMvc.perform(get("/api/users/profile").principal(auth))
+        mockMvc.perform(get("/api/users/profile").principal(createAuth("nonexistent", 99L)))
                 .andExpect(status().isNotFound());
     }
 
@@ -76,13 +77,7 @@ class UserControllerTest {
         user.setAvatarUrl("/uploads/avatars/user1.png");
         when(userService.findById(1L)).thenReturn(Optional.of(user));
 
-        Claims claims = org.mockito.Mockito.mock(Claims.class);
-        when(claims.get("userId")).thenReturn(1);
-
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("user1", null);
-        auth.setDetails(claims);
-
-        mockMvc.perform(get("/api/users/profile").principal(auth))
+        mockMvc.perform(get("/api/users/profile").principal(createAuth("user1", 1L)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.avatarUrl").value("/uploads/avatars/user1.png"));
     }
@@ -99,27 +94,59 @@ class UserControllerTest {
 
         when(userService.updateAvatar(1L, avatar)).thenReturn("/uploads/avatars/user1_avatar.png");
 
-        Claims claims = org.mockito.Mockito.mock(Claims.class);
-        when(claims.get("userId")).thenReturn(1);
-
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("user1", null);
-        auth.setDetails(claims);
-
-        mockMvc.perform(multipart("/api/users/avatar").file(avatar).principal(auth))
+        mockMvc.perform(multipart("/api/users/avatar").file(avatar).principal(createAuth("user1", 1L)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.avatarUrl").value("/uploads/avatars/user1_avatar.png"));
     }
 
     @Test
     void uploadAvatar_noFile_returnsBadRequest() throws Exception {
-        Claims claims = org.mockito.Mockito.mock(Claims.class);
-        when(claims.get("userId")).thenReturn(1);
-
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("user1", null);
-        auth.setDetails(claims);
-
-        mockMvc.perform(multipart("/api/users/avatar").principal(auth))
+        mockMvc.perform(multipart("/api/users/avatar").principal(createAuth("user1", 1L)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Avatar file is required"));
+    }
+
+    @Test
+    void uploadAvatar_nonImage_returnsBadRequest() throws Exception {
+        MockMultipartFile avatar = new MockMultipartFile(
+                "avatar", "test.txt", "text/plain", new byte[]{1, 2, 3});
+        when(userService.updateAvatar(1L, avatar)).thenThrow(new IllegalArgumentException("Avatar must be an image"));
+
+        mockMvc.perform(multipart("/api/users/avatar").file(avatar).principal(createAuth("user1", 1L)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Avatar must be an image"));
+    }
+
+    @Test
+    void uploadAvatar_fileTooLarge_returnsBadRequest() throws Exception {
+        MockMultipartFile avatar = new MockMultipartFile(
+                "avatar", "large.png", "image/png", new byte[]{1, 2, 3});
+        when(userService.updateAvatar(1L, avatar)).thenThrow(new IllegalArgumentException("Avatar must be smaller than 5MB"));
+
+        mockMvc.perform(multipart("/api/users/avatar").file(avatar).principal(createAuth("user1", 1L)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Avatar must be smaller than 5MB"));
+    }
+
+    @Test
+    void uploadAvatar_userNotFound_returnsBadRequest() throws Exception {
+        MockMultipartFile avatar = new MockMultipartFile(
+                "avatar", "avatar.png", "image/png", new byte[]{1, 2, 3});
+        when(userService.updateAvatar(1L, avatar)).thenThrow(new IllegalArgumentException("User not found"));
+
+        mockMvc.perform(multipart("/api/users/avatar").file(avatar).principal(createAuth("user1", 1L)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("User not found"));
+    }
+
+    @Test
+    void uploadAvatar_serviceError_returnsInternalServerError() throws Exception {
+        MockMultipartFile avatar = new MockMultipartFile(
+                "avatar", "avatar.png", "image/png", new byte[]{1, 2, 3});
+        when(userService.updateAvatar(1L, avatar)).thenThrow(new RuntimeException("Failed to save avatar file"));
+
+        mockMvc.perform(multipart("/api/users/avatar").file(avatar).principal(createAuth("user1", 1L)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("Failed to upload avatar"));
     }
 }

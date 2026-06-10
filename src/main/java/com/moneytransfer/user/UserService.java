@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -61,8 +62,16 @@ public class UserService {
             Path uploadDir = Path.of("uploads/avatars/");
             Files.createDirectories(uploadDir);
 
-            String filename = user.getUsername() + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            Path targetPath = uploadDir.resolve(filename);
+            String ext = ".png";
+            String originalName = file.getOriginalFilename();
+            if (originalName != null && originalName.contains(".")) {
+                ext = originalName.substring(originalName.lastIndexOf("."));
+            }
+            String filename = user.getUsername() + "_" + UUID.randomUUID().toString() + ext;
+            Path targetPath = uploadDir.resolve(filename).normalize();
+            if (!targetPath.startsWith(uploadDir.normalize())) {
+                throw new SecurityException("Invalid avatar file path");
+            }
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             String avatarUrl = "/uploads/avatars/" + filename;
