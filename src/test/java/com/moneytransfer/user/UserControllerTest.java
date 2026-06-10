@@ -30,6 +30,41 @@ class UserControllerTest {
     private com.moneytransfer.auth.JwtAuthFilter jwtAuthFilter;
 
     @Test
+    void getProfile_avatarUrlNull_returnsEmptyString() throws Exception {
+        User user = new User();
+        user.setId(2L);
+        user.setUsername("user2");
+        user.setEmail("user2@example.com");
+        user.setFullName("User Two");
+        user.setAvatarUrl(null);
+        when(userService.findById(2L)).thenReturn(Optional.of(user));
+
+        Claims claims = org.mockito.Mockito.mock(Claims.class);
+        when(claims.get("userId")).thenReturn(2);
+
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("user2", null);
+        auth.setDetails(claims);
+
+        mockMvc.perform(get("/api/users/profile").principal(auth))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.avatarUrl").value(""));
+    }
+
+    @Test
+    void getProfile_userNotFound_returns404() throws Exception {
+        when(userService.findById(99L)).thenReturn(Optional.empty());
+
+        Claims claims = org.mockito.Mockito.mock(Claims.class);
+        when(claims.get("userId")).thenReturn(99);
+
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("nonexistent", null);
+        auth.setDetails(claims);
+
+        mockMvc.perform(get("/api/users/profile").principal(auth))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void getProfile_returnsAvatarUrl() throws Exception {
         User user = new User();
         user.setId(1L);
