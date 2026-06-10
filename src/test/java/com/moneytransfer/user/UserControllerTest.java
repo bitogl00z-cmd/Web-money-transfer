@@ -100,6 +100,19 @@ class UserControllerTest {
     }
 
     @Test
+    void uploadAvatar_emptyFile_returnsBadRequest() throws Exception {
+        MockMultipartFile avatar = new MockMultipartFile(
+                "avatar", "empty.png", "image/png", new byte[0]);
+
+        Claims claims = mockClaims(1L);
+        UsernamePasswordAuthenticationToken auth = createAuth("user1", 1L);
+
+        mockMvc.perform(multipart("/api/users/avatar").file(avatar).principal(auth))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Avatar file is required"));
+    }
+
+    @Test
     void uploadAvatar_noFile_returnsBadRequest() throws Exception {
         mockMvc.perform(multipart("/api/users/avatar").principal(createAuth("user1", 1L)))
                 .andExpect(status().isBadRequest())

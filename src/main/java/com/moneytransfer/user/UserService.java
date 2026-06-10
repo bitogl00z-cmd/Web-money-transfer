@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -65,7 +66,11 @@ public class UserService {
             String ext = ".png";
             String originalName = file.getOriginalFilename();
             if (originalName != null && originalName.contains(".")) {
-                ext = originalName.substring(originalName.lastIndexOf("."));
+                String candidateExt = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
+                Set<String> allowedExts = Set.of(".png", ".jpg", ".jpeg", ".gif", ".webp");
+                if (allowedExts.contains(candidateExt)) {
+                    ext = candidateExt;
+                }
             }
             String filename = user.getUsername() + "_" + UUID.randomUUID().toString() + ext;
             Path targetPath = uploadDir.resolve(filename).normalize();

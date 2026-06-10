@@ -49,7 +49,7 @@ function openCamera(onCapture) {
         '<div class="camera-overlay"></div>' +
         '</div>' +
         '<div class="modal-actions">' +
-        '<button onclick="closeModal()" class="btn btn-outline">Hủy</button>' +
+        '<button id="cancelFaceBtn" class="btn btn-outline">Hủy</button>' +
         '<button id="captureBtn" class="btn btn-primary">Chụp ảnh</button>' +
         '</div>';
     openModal(html);
@@ -66,6 +66,12 @@ function openCamera(onCapture) {
             showToast('Không thể truy cập camera', 'error');
             closeModal();
         });
+
+    document.getElementById('cancelFaceBtn').addEventListener('click', function() {
+        if (stream) { stream.getTracks().forEach(function(t) { t.stop(); }); }
+        closeModal();
+        if (onCapture) onCapture(null);
+    });
 
     document.getElementById('captureBtn').addEventListener('click', function() {
         var canvas = document.createElement('canvas');
@@ -124,6 +130,22 @@ function toggleSidebar() {
     document.querySelector('.sidebar').classList.toggle('open');
 }
 
+function toggleCollapse() {
+    var sidebar = document.querySelector('.sidebar');
+    var main = document.querySelector('.main-content');
+    sidebar.classList.toggle('collapsed');
+    main.classList.toggle('expanded');
+    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed') ? 'true' : 'false');
+}
+
+function toggleTheme() {
+    var html = document.documentElement;
+    var isLight = html.classList.toggle('light-mode');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    var btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = isLight ? '🌙' : '☀️';
+}
+
 function showNotificationBox(title, message, type) {
     var container = document.getElementById('notificationContainer');
     if (!container) {
@@ -169,4 +191,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    // Restore sidebar collapsed state
+    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        document.querySelector('.sidebar')?.classList.add('collapsed');
+        document.querySelector('.main-content')?.classList.add('expanded');
+    }
+    // Restore theme
+    if (localStorage.getItem('theme') === 'light') {
+        document.documentElement.classList.add('light-mode');
+        var btn = document.getElementById('themeToggleBtn');
+        if (btn) btn.textContent = '🌙';
+    }
 });
+
+function renderAvatar(containerEl, imgEl, placeholderEl, avatarUrl, name) {
+    if (avatarUrl && avatarUrl.trim() !== '') {
+        imgEl.src = avatarUrl;
+        imgEl.style.display = '';
+        if (placeholderEl) placeholderEl.style.display = 'none';
+    } else {
+        imgEl.style.display = 'none';
+        if (placeholderEl) {
+            placeholderEl.style.display = '';
+            placeholderEl.textContent = (name || 'U').charAt(0).toUpperCase();
+        }
+    }
+}
