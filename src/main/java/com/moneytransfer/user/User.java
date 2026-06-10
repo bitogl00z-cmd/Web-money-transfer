@@ -31,6 +31,9 @@ public class User {
     @Column(length = 500)
     private String faceImageUrl;
 
+    @Column(length = 500)
+    private String avatarUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role = UserRole.USER;
@@ -56,6 +59,12 @@ public class User {
 
     @Column(nullable = false)
     private boolean emailNotifications = true;
+
+    @Column(name = "pin_hash", length = 255, nullable = true)
+    private String pinHash;
+
+    @Column(name = "pin_set", nullable = false)
+    private Boolean pinSet = false;
 
     @Column(length = 5)
     private String language = "vi";
@@ -87,6 +96,8 @@ public class User {
     public void setFaceEncoding(String faceEncoding) { this.faceEncoding = faceEncoding; }
     public String getFaceImageUrl() { return faceImageUrl; }
     public void setFaceImageUrl(String faceImageUrl) { this.faceImageUrl = faceImageUrl; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
     public UserTier getTier() { return tier; }
     public void setTier(UserTier tier) { this.tier = tier; }
     public boolean isOtpEnabled() { return otpEnabled; }
@@ -101,6 +112,10 @@ public class User {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public boolean isEmailNotifications() { return emailNotifications; }
     public void setEmailNotifications(boolean emailNotifications) { this.emailNotifications = emailNotifications; }
+    public String getPinHash() { return pinHash; }
+    public void setPinHash(String pinHash) { this.pinHash = pinHash; }
+    public Boolean getPinSet() { return pinSet; }
+    public void setPinSet(Boolean pinSet) { this.pinSet = pinSet; }
     public String getLanguage() { return language; }
     public void setLanguage(String language) { this.language = language; }
 }

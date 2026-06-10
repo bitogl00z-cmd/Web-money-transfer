@@ -22,17 +22,20 @@ public class UserController {
         Claims claims = (Claims) auth.getDetails();
         Long userId = ((Integer) claims.get("userId")).longValue();
         return userService.findById(userId)
-                .map(user -> ResponseEntity.ok(Map.of(
-                        "id", user.getId(),
-                        "username", user.getUsername(),
-                        "email", user.getEmail(),
-                        "fullName", user.getFullName(),
-                        "phone", user.getPhone() != null ? user.getPhone() : "",
-                        "tier", user.getTier().name(),
-                        "otpEnabled", user.isOtpEnabled(),
-                        "faceEnabled", user.isFaceEnabled(),
-                        "emailNotifications", user.isEmailNotifications(),
-                        "language", user.getLanguage() != null ? user.getLanguage() : "vi"
+                .map(user -> ResponseEntity.ok(Map.ofEntries(
+                        Map.entry("id", user.getId()),
+                        Map.entry("username", user.getUsername()),
+                        Map.entry("email", user.getEmail()),
+                        Map.entry("fullName", user.getFullName()),
+                        Map.entry("phone", user.getPhone() != null ? user.getPhone() : ""),
+                        Map.entry("tier", user.getTier().name()),
+                        Map.entry("otpEnabled", user.isOtpEnabled()),
+                        Map.entry("faceEnabled", user.isFaceEnabled()),
+                        Map.entry("avatarUrl", user.getAvatarUrl() != null ? user.getAvatarUrl() : ""),
+                        Map.entry("faceImageUrl", user.getFaceImageUrl() != null ? user.getFaceImageUrl() : ""),
+                        Map.entry("pinSet", user.getPinSet() != null && user.getPinSet()),
+                        Map.entry("emailNotifications", user.isEmailNotifications()),
+                        Map.entry("language", user.getLanguage() != null ? user.getLanguage() : "vi")
                 )))
                 .orElse(ResponseEntity.notFound().build());
     }
