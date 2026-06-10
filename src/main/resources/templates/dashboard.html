@@ -6,8 +6,16 @@
     <aside th:replace="fragments/layout :: sidebar('dashboard')"></aside>
     <main class="main-content">
         <div class="page-header">
-            <h1 class="page-title">📊 Tổng quan tài khoản</h1>
-            <p class="page-subtitle">Xem tổng quan số dư và giao dịch gần đây</p>
+            <div class="dashboard-greeting">
+                <div class="dash-avatar" id="dashAvatar">
+                    <div class="dash-avatar-placeholder" id="dashAvatarPlaceholder">U</div>
+                    <img id="dashAvatarImg" src="" alt="" style="display:none;" class="dash-avatar-img">
+                </div>
+                <div>
+                    <div class="dashboard-greeting-text" id="dashGreeting"></div>
+                    <div class="page-subtitle" id="dashGreetingSub">Xem tổng quan số dư và giao dịch gần đây</div>
+                </div>
+            </div>
         </div>
         <div class="stat-grid" id="statsContainer">
             <div class="stat-card blue">
@@ -57,8 +65,50 @@
     </main>
     <div th:replace="fragments/layout :: toast"></div>
     <div th:replace="fragments/layout :: scripts"></div>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Force PIN if not set
+        apiFetch('/api/users/profile').then(function(res) {
+            if (res.ok && !res.data.pinSet) {
+                openModal('<div class="modal-title">⚠️ Cần cài đặt mã PIN</div>' +
+                    '<div class="modal-desc">Mã PIN giao dịch là bắt buộc để đảm bảo an toàn. Vui lòng cài đặt mã PIN trước khi sử dụng.</div>' +
+                    '<div style="margin:16px 0;">' +
+                    '<div class="form-group"><label class="form-label">Mã PIN (4-6 số)</label><input type="password" id="forcePinInput" class="form-input" placeholder="••••••" maxlength="6" inputmode="numeric" style="max-width:200px;"></div>' +
+                    '<div class="form-group"><label class="form-label">Xác nhận mã PIN</label><input type="password" id="forcePinConfirm" class="form-input" placeholder="••••••" maxlength="6" inputmode="numeric" style="max-width:200px;"></div>' +
+                    '</div>' +
+                    '<div class="modal-actions">' +
+                    '<button onclick="saveForcePin()" class="btn btn-primary btn-lg btn-full">Cài đặt PIN</button>' +
+                    '</div>');
+            }
+            var u = res.data;
+            if (u) {
+                var greeting = document.getElementById('dashGreeting');
+                greeting.textContent = 'Xin chào, ' + (u.fullName || u.username || '') + '!';
+                var dashAvatarImg = document.getElementById('dashAvatarImg');
+                var dashAvatarPlaceholder = document.getElementById('dashAvatarPlaceholder');
+                if (u.avatarUrl && u.avatarUrl.trim() !== '') {
+                    dashAvatarImg.src = u.avatarUrl;
+                    dashAvatarImg.style.display = '';
+                    dashAvatarPlaceholder.style.display = 'none';
+                } else {
+                    dashAvatarImg.style.display = 'none';
+                    dashAvatarPlaceholder.style.display = '';
+                    var name = u.fullName || u.username || 'U';
+                    dashAvatarPlaceholder.textContent = name.charAt(0).toUpperCase();
+                }
+            }
+        });
+
+        function saveForcePin() {
+            var pin = document.getElementById('forcePinInput').value;
+            var confirm = document.getElementById('forcePinConfirm').value;
+            if (!pin || !pin.match(/^\d{4,6}$/)) { showToast('Mã PIN phải là 4-6 chữ số', 'error'); return; }
+            if (pin !== confirm) { showToast('Mã PIN không khớp', 'error'); return; }
+            apiFetch('/api/pin/set', { method: 'POST', body: { pin: pin, oldPin: '' } }).then(function(res) {
+                if (res.ok) { closeModal(); showToast('Cài đặt mã PIN thành công!', 'success'); }
+                else { showToast(res.data.error || 'Lỗi', 'error'); }
+            });
+        }
+
         fetch('/api/dashboard/stats', { credentials: 'include' })
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -86,9 +136,9 @@
                         type: 'line',
                         data: {
                             labels: data.chartData.map(function(d) { return d.date; }),
-                            datasets: [{ label: 'Số dư ròng', data: data.chartData.map(function(d) { return d.net; }), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, tension: 0.3 }]
+                            datasets: [{ label: 'Số dư cuối ngày', data: data.chartData.map(function(d) { return d.balance; }), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, tension: 0.3 }]
                         },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: function(v) { return formatVND(v); } } } } }
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, ticks: { callback: function(v) { return formatVND(v); } } } } }
                     });
                 }
             })

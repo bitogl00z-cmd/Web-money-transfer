@@ -4,22 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title} + ' - Ngân Hàng'">Banking</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');</style>
     <link rel="stylesheet" th:href="@{/css/banking.css}">
 </head>
 
 <body th:fragment="navbar(currentPage)">
     <nav class="navbar">
-        <button class="hamburger btn" onclick="toggleSidebar()" style="background:none;border:none;color:#fff;font-size:1.5rem;padding:4px 8px;margin-right:12px;">☰</button>
+        <button class="hamburger-btn btn" onclick="toggleSidebar()" style="background:none;border:none;color:#fff;font-size:1.5rem;padding:4px 8px;margin-right:12px;">☰</button>
+        <button class="sidebar-toggle" onclick="toggleCollapse()" title="Thu gọn sidebar" data-i18n-title="nav.collapse">◀</button>
         <div class="logo">
             <span class="logo-icon">🏦</span>
             <span>Ngân Hàng</span>
         </div>
         <div class="nav-right">
-            <a th:href="@{/settings}" class="nav-link" title="Cài đặt">⚙️ <span th:text="${#authentication.name}">user</span></a>
-            <a th:href="@{/logout}" class="nav-link" style="color:rgba(255,255,255,0.7)">🚪 Đăng xuất</a>
+            <a th:href="@{/settings}" class="nav-link" title="Cài đặt" data-i18n-title="nav.settings">
+                <img id="navAvatar" class="nav-avatar" src="" alt="" style="display:none;">
+                <span th:text="${#authentication.name}">user</span>
+            </a>
+            <a th:href="@{/logout}" class="nav-link" style="color:rgba(255,255,255,0.7)" data-i18n="nav.logout"></a>
+            <button id="themeToggleBtn" class="theme-toggle" onclick="toggleTheme()" title="Đổi màu nền" data-i18n-title="nav.theme">☀️</button>
         </div>
     </nav>
 </body>
@@ -27,40 +30,51 @@
 <div th:fragment="sidebar(currentPage)">
     <aside class="sidebar">
         <a th:href="@{/dashboard}" th:classappend="${currentPage == 'dashboard'} ? 'active'" class="sidebar-item">
-            <span class="icon">📊</span> Tổng quan
+            <span class="icon">📊</span><span class="sidebar-text" data-i18n="sidebar.dashboard"> Tổng quan</span>
         </a>
         <a th:href="@{/transfer}" th:classappend="${currentPage == 'transfer'} ? 'active'" class="sidebar-item">
-            <span class="icon">💸</span> Chuyển tiền
+            <span class="icon">💸</span><span class="sidebar-text" data-i18n="sidebar.transfer"> Chuyển tiền</span>
+        </a>
+        <a th:href="@{/qr}" th:classappend="${currentPage == 'qr'} ? 'active'" class="sidebar-item">
+            <span class="icon">📱</span><span class="sidebar-text" data-i18n="sidebar.qr"> Mã QR</span>
         </a>
         <a th:href="@{/history}" th:classappend="${currentPage == 'history'} ? 'active'" class="sidebar-item">
-            <span class="icon">📋</span> Lịch sử
+            <span class="icon">📋</span><span class="sidebar-text" data-i18n="sidebar.history"> Lịch sử</span>
         </a>
-        <a th:href="@{/beneficiaries}" th:classappend="${currentPage == 'beneficiaries'} ? 'active'" class="sidebar-item">
-            <span class="icon">👥</span> Thụ hưởng
-        </a>
+
         <a th:href="@{/scheduled}" th:classappend="${currentPage == 'scheduled'} ? 'active'" class="sidebar-item">
-            <span class="icon">⏰</span> Định kỳ
+            <span class="icon">⏰</span><span class="sidebar-text" data-i18n="sidebar.scheduled"> Định kỳ</span>
         </a>
         <a th:href="@{/settings}" th:classappend="${currentPage == 'settings'} ? 'active'" class="sidebar-item">
-            <span class="icon">⚙️</span> Cài đặt
+            <span class="icon">⚙️</span><span class="sidebar-text" data-i18n="sidebar.settings"> Cài đặt</span>
         </a>
         <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users}" th:classappend="${currentPage == 'admin'} ? 'active'" class="sidebar-item">
-            <span class="icon">🔧</span> Quản trị
+            <span class="icon">🔧</span><span class="sidebar-text" data-i18n="sidebar.admin"> Quản trị</span>
         </a>
         <hr style="border:none;border-top:1px solid var(--border);margin:12px 16px;">
         <a th:href="@{/logout}" class="sidebar-item" style="color:var(--danger)">
-            <span class="icon">🚪</span> Đăng xuất
+            <span class="icon">🚪</span><span class="sidebar-text" data-i18n="sidebar.logout"> Đăng xuất</span>
         </a>
     </aside>
 </div>
 
 <div th:fragment="scripts">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <script th:src="@{/js/translations.js}"></script>
     <script th:src="@{/js/banking.js}"></script>
     <script>
         fetch('/api/users/profile', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(u) {
             connectWebSocket(u.id);
+            applyLanguage(u.language || 'vi');
+            var navAvatar = document.getElementById('navAvatar');
+            if (u.avatarUrl && u.avatarUrl.trim() !== '') {
+                navAvatar.src = u.avatarUrl;
+                navAvatar.style.display = 'inline-block';
+            } else {
+                navAvatar.style.display = 'none';
+            }
         }).catch(function() {});
     </script>
 </div>
