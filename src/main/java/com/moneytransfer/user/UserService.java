@@ -2,7 +2,12 @@ package com.moneytransfer.user;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.Optional;
 
@@ -34,5 +39,39 @@ public class UserService {
         if (updates.containsKey("emailNotifications")) user.setEmailNotifications(Boolean.parseBoolean(updates.get("emailNotifications")));
         if (updates.containsKey("language")) user.setLanguage(updates.get("language"));
         userRepository.save(user);
+    }
+
+    @Transactional
+    public String updateAvatar(Long userId, MultipartFile file) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Avatar file is required");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("Avatar must be an image");
+        }
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("Avatar must be smaller than 5MB");
+        }
+
+        try {
+            Path uploadDir = Path.of("uploads/avatars/");
+            Files.createDirectories(uploadDir);
+
+            String filename = user.getUsername() + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            Path targetPath = uploadDir.resolve(filename);
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            String avatarUrl = "/uploads/avatars/" + filename;
+            user.setAvatarUrl(avatarUrl);
+            userRepository.save(user);
+
+            return avatarUrl;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save avatar file", e);
+        }
     }
 }

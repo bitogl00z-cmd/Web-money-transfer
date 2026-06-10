@@ -5,6 +5,7 @@ import io.jsonwebtoken.Claims;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -38,6 +39,23 @@ public class UserController {
                         Map.entry("language", user.getLanguage() != null ? user.getLanguage() : "vi")
                 )))
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/avatar")
+    public ResponseEntity<?> uploadAvatar(Authentication auth, @RequestParam(value = "avatar", required = false) MultipartFile avatar) {
+        if (avatar == null || avatar.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Avatar file is required"));
+        }
+        try {
+            Claims claims = (Claims) auth.getDetails();
+            Long userId = ((Integer) claims.get("userId")).longValue();
+            String avatarUrl = userService.updateAvatar(userId, avatar);
+            return ResponseEntity.ok(Map.of("avatarUrl", avatarUrl));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to upload avatar"));
+        }
     }
 
     @PutMapping("/profile")
