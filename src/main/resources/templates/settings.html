@@ -6,28 +6,44 @@
     <aside th:replace="fragments/layout :: sidebar('settings')"></aside>
     <main class="main-content">
         <div class="page-header">
-            <h1 class="page-title">⚙️ Cài đặt</h1>
+            <h1 class="page-title">Cài đặt</h1>
             <p class="page-subtitle">Quản lý tài khoản và bảo mật</p>
         </div>
 
         <div class="tabs" style="display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:0;flex-wrap:wrap;">
             <button class="tab-btn active" data-tab="personal">👤 Cá nhân</button>
             <button class="tab-btn" data-tab="security">🔒 Bảo mật</button>
-            <button class="tab-btn" data-tab="facelogin">📸 Đăng nhập nhanh</button>
-            <button class="tab-btn" data-tab="limits">💰 Hạn mức</button>
+            <button class="tab-btn" data-tab="pin">🔐 Mã PIN</button>
+            <button class="tab-btn" data-tab="face">📸 Gương mặt</button>
             <button class="tab-btn" data-tab="notifications">🔔 Thông báo</button>
             <button class="tab-btn" data-tab="language">🌐 Ngôn ngữ</button>
         </div>
 
         <div id="tab-personal" class="tab-content active">
-            <div class="card">
-                <div class="card-header"><div class="card-title">👤 Thông tin cá nhân</div></div>
+            <div class="card profile-card">
+                <div class="card-header"><div class="card-title">Thông tin cá nhân</div></div>
                 <div class="card-body">
-                    <div class="form-group"><label class="form-label">Tên đăng nhập</label><input type="text" id="p-username" class="form-input" disabled></div>
+                    <div class="profile-card-header">
+                        <div class="profile-avatar-wrapper">
+                            <div class="profile-avatar" id="avatarPreview">
+                                <div class="avatar-placeholder" id="avatarPlaceholder">U</div>
+                                <img id="avatarImg" src="" alt="Avatar" style="display:none;">
+                            </div>
+                            <button type="button" class="avatar-upload-btn" onclick="document.getElementById('avatarInput').click()">
+                                Tải ảnh từ máy
+                            </button>
+                            <input type="file" id="avatarInput" accept="image/*" style="display:none;">
+                        </div>
+                        <div class="profile-info">
+                            <div class="profile-name" id="profileDisplayName">User Name</div>
+                            <div class="profile-username" id="profileDisplayUsername">@username</div>
+                            <div class="profile-tier"><span class="badge badge-info" id="p-tier">STANDARD</span></div>
+                        </div>
+                    </div>
+                    <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
                     <div class="form-group"><label class="form-label">Họ và tên</label><input type="text" id="p-fullName" class="form-input"></div>
                     <div class="form-group"><label class="form-label">Email</label><input type="email" id="p-email" class="form-input"></div>
                     <div class="form-group"><label class="form-label">Số điện thoại</label><input type="tel" id="p-phone" class="form-input"></div>
-                    <div class="form-group" style="margin-bottom:12px;"><strong style="color:var(--text-muted);font-size:0.85rem;">Hạng thành viên</strong><br><span id="p-tier" class="badge badge-info">STANDARD</span></div>
                     <button onclick="savePersonalInfo()" class="btn btn-primary">Lưu thay đổi</button>
                 </div>
             </div>
@@ -43,39 +59,35 @@
                     <button onclick="changePassword()" class="btn btn-primary">Đổi mật khẩu</button>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-header"><div class="card-title">🔐 Xác thực OTP</div></div>
-                <div class="card-body">
-                    <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
-                        <input type="checkbox" id="s-otpEnabled" onchange="toggleOtp()"> Bật xác thực OTP khi đăng nhập và giao dịch
-                    </label>
-                </div>
-            </div>
         </div>
 
-        <div id="tab-facelogin" class="tab-content">
+        <div id="tab-pin" class="tab-content">
             <div class="card">
-                <div class="card-header"><div class="card-title">📸 Đăng nhập nhanh bằng gương mặt</div></div>
+                <div class="card-header"><div class="card-title">🔐 Mã PIN giao dịch</div></div>
                 <div class="card-body">
-                    <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Đăng ký gương mặt để đăng nhập nhanh không cần mật khẩu và xác thực giao dịch trên 10.000.000₫.</p>
-                    <div id="f-faceStatus" style="margin-bottom:16px;font-size:0.9rem;"></div>
-                    <button id="f-registerFaceBtn" class="btn btn-primary btn-lg btn-full" onclick="registerFace()">📸 Đăng ký gương mặt</button>
-                    <div style="margin-top:16px;">
-                        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;">
-                            <input type="checkbox" id="f-faceEnabled" onchange="toggleFace()"> Cho phép đăng nhập nhanh bằng gương mặt
-                        </label>
+                    <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Mã PIN bắt buộc để xác thực khi chuyển tiền.</p>
+                    <div id="pinStatus" style="margin-bottom:12px;"></div>
+                    <div id="pinFormArea">
+                        <div class="form-group"><label class="form-label">Mã PIN hiện tại</label><input type="password" id="oldPinInput" class="form-input" placeholder="••••••" maxlength="6" inputmode="numeric" style="max-width:200px;"></div>
+                        <div class="form-group"><label class="form-label">Mã PIN mới (4-6 số)</label><input type="password" id="pinInput" class="form-input" placeholder="••••••" maxlength="6" inputmode="numeric" style="max-width:200px;"></div>
+                        <div class="form-group"><label class="form-label">Xác nhận mã PIN</label><input type="password" id="pinConfirm" class="form-input" placeholder="••••••" maxlength="6" inputmode="numeric" style="max-width:200px;"></div>
+                        <button onclick="savePin()" class="btn btn-primary" id="pinSaveBtn">Cài đặt PIN</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="tab-limits" class="tab-content">
+
+        <div id="tab-face" class="tab-content">
             <div class="card">
-                <div class="card-header"><div class="card-title">💰 Hạn mức giao dịch</div></div>
+                <div class="card-header"><div class="card-title">📸 Xác thực gương mặt</div></div>
                 <div class="card-body">
-                    <div style="margin-bottom:12px;"><strong style="color:var(--text-muted);font-size:0.85rem;">Hạng thành viên</strong><br><span id="l-tier" class="badge badge-info">STANDARD</span></div>
-                    <div style="margin-bottom:12px;"><strong style="color:var(--text-muted);font-size:0.85rem;">Ngưỡng xác thực gương mặt</strong><br>Giao dịch từ 10.000.000₫ trở lên yêu cầu xác thực gương mặt</div>
-                    <div><strong style="color:var(--text-muted);font-size:0.85rem;">Trạng thái</strong><br><span id="l-faceStatus">Chưa đăng ký gương mặt</span></div>
+                    <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Đăng ký gương mặt để đăng nhập nhanh và xác thực giao dịch trên 10 triệu.</p>
+                    <div id="faceStatus" style="margin-bottom:12px;"></div>
+                    <div id="faceActions" style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <button onclick="registerFace()" id="registerFaceBtn" class="btn btn-primary">📸 Đăng ký gương mặt</button>
+                        <button onclick="removeFace()" id="removeFaceBtn" class="btn btn-outline" style="display:none;">🗑 Xóa gương mặt</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -129,20 +141,48 @@
 
         fetch('/api/users/profile', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(u) {
             userData = u;
-            document.getElementById('p-username').value = u.username;
             document.getElementById('p-fullName').value = u.fullName || '';
             document.getElementById('p-email').value = u.email || '';
             document.getElementById('p-phone').value = u.phone || '';
             document.getElementById('p-tier').textContent = u.tier || 'STANDARD';
-            document.getElementById('l-tier').textContent = u.tier || 'STANDARD';
-            document.getElementById('s-otpEnabled').checked = u.otpEnabled;
+            // Avatar display
+            var avatarUrl = u.avatarUrl;
+            var avatarImg = document.getElementById('avatarImg');
+            var avatarPlaceholder = document.getElementById('avatarPlaceholder');
+            if (avatarUrl && avatarUrl.trim() !== '') {
+                avatarImg.src = avatarUrl;
+                avatarImg.style.display = '';
+                avatarPlaceholder.style.display = 'none';
+            } else {
+                avatarImg.style.display = 'none';
+                avatarPlaceholder.style.display = '';
+                var name = u.fullName || u.username || 'U';
+                avatarPlaceholder.textContent = name.charAt(0).toUpperCase();
+            }
+            document.getElementById('profileDisplayName').textContent = u.fullName || u.username || '';
+            document.getElementById('profileDisplayUsername').textContent = '@' + (u.username || '');
             document.getElementById('n-emailNotifications').checked = u.emailNotifications !== false;
             document.getElementById('l-language').value = u.language || 'vi';
-            var faceEnabled = u.faceEnabled;
-            document.getElementById('f-faceEnabled').checked = faceEnabled;
-            document.getElementById('f-faceStatus').innerHTML = faceEnabled ? '<span class="badge badge-success">✓ Đã đăng ký gương mặt</span>' : '<span class="badge badge-gray">✗ Chưa đăng ký</span>';
-            document.getElementById('f-registerFaceBtn').textContent = faceEnabled ? '📸 Cập nhật gương mặt' : '📸 Đăng ký gương mặt';
-            document.getElementById('l-faceStatus').innerHTML = faceEnabled ? '<span class="badge badge-success">✓ Đã đăng ký</span>' : '<span class="badge badge-gray">✗ Chưa đăng ký</span>';
+            // Face status
+            var faceStatus = document.getElementById('faceStatus');
+            var faceActions = document.getElementById('faceActions');
+            if (u.faceEnabled) {
+                faceStatus.innerHTML = '<span class="badge badge-success">✓ Đã đăng ký gương mặt</span>';
+                document.getElementById('registerFaceBtn').textContent = '📸 Chụp lại gương mặt';
+                document.getElementById('removeFaceBtn').style.display = '';
+            } else {
+                faceStatus.innerHTML = '<span class="badge badge-info">ℹ Chưa đăng ký gương mặt</span>';
+                document.getElementById('removeFaceBtn').style.display = 'none';
+                document.getElementById('registerFaceBtn').textContent = '📸 Đăng ký gương mặt';
+            }
+            // PIN status
+            if (u.pinSet) {
+                document.getElementById('pinStatus').innerHTML = '<span class="badge badge-success">✓ Đã cài mã PIN</span>';
+                document.getElementById('pinSaveBtn').textContent = 'Đổi mã PIN';
+            } else {
+                document.getElementById('pinStatus').innerHTML = '<span class="badge badge-warning">⚠️ Bắt buộc: chưa cài mã PIN</span>';
+                document.getElementById('pinSaveBtn').textContent = 'Cài đặt PIN';
+            }
         });
 
         function savePersonalInfo() {
@@ -165,32 +205,54 @@
             });
         }
 
-        function toggleOtp() {
-            apiFetch('/api/users/profile', { method: 'PUT', body: { otpEnabled: document.getElementById('s-otpEnabled').checked.toString() } }).then(function(res) {
-                if (res.ok) { showToast('Đã cập nhật', 'success'); } else { showToast('Lỗi', 'error'); }
-            });
-        }
-
-        function toggleFace() {
-            var enabled = document.getElementById('f-faceEnabled').checked;
-            apiFetch('/api/users/profile', { method: 'PUT', body: { faceEnabled: enabled.toString() } }).then(function(res) {
-                if (res.ok) { showToast(enabled ? 'Đã bật đăng nhập nhanh' : 'Đã tắt đăng nhập nhanh', 'success'); } else { showToast('Lỗi', 'error'); }
+        function savePin() {
+            var pin = document.getElementById('pinInput').value;
+            var confirm = document.getElementById('pinConfirm').value;
+            var oldPin = document.getElementById('oldPinInput').value;
+            if (!pin || !pin.match(/^\d{4,6}$/)) { showToast('Mã PIN phải là 4-6 chữ số', 'error'); return; }
+            if (pin !== confirm) { showToast('Mã PIN không khớp', 'error'); return; }
+            apiFetch('/api/pin/set', { method: 'POST', body: { pin: pin, oldPin: oldPin } }).then(function(res) {
+                if (res.ok) {
+                    showToast('Cài đặt mã PIN thành công', 'success');
+                    document.getElementById('pinStatus').innerHTML = '<span class="badge badge-success">✓ Đã cài mã PIN</span>';
+                    document.getElementById('pinSaveBtn').textContent = 'Đổi mã PIN';
+                    document.getElementById('pinInput').value = '';
+                    document.getElementById('pinConfirm').value = '';
+                    document.getElementById('oldPinInput').value = '';
+                } else { showToast(res.data.error || 'Lỗi', 'error'); }
             });
         }
 
         function registerFace() {
-            openCamera(async function(base64) {
-                var btn = document.getElementById('f-registerFaceBtn');
+            openCamera(function(base64) {
+                if (!base64) return;
+                var btn = document.getElementById('registerFaceBtn');
                 btn.disabled = true; btn.textContent = 'Đang xử lý...';
-                var res = await apiFetch('/api/face/register', { method: 'POST', body: { faceImage: base64 } });
+                apiFetch('/api/face/register', { method: 'POST', body: { faceImage: base64 } }).then(function(res) {
+                    if (res.ok) {
+                        showToast('Đăng ký gương mặt thành công', 'success');
+                        document.getElementById('faceStatus').innerHTML = '<span class="badge badge-success">✓ Đã đăng ký gương mặt</span>';
+                        document.getElementById('registerFaceBtn').textContent = '📸 Chụp lại gương mặt';
+                        document.getElementById('removeFaceBtn').style.display = '';
+                    } else {
+                        showToast(res.data.error || 'Đăng ký thất bại', 'error');
+                    }
+                    btn.disabled = false;
+                });
+            });
+        }
+
+        function removeFace() {
+            if (!confirm('Bạn có chắc muốn xóa dữ liệu gương mặt?')) return;
+            apiFetch('/api/users/profile', { method: 'PUT', body: { faceEnabled: 'false' } }).then(function(res) {
                 if (res.ok) {
-                    showToast('Đăng ký gương mặt thành công!', 'success');
-                    document.getElementById('f-faceStatus').innerHTML = '<span class="badge badge-success">✓ Đã đăng ký gương mặt</span>';
-                    document.getElementById('f-registerFaceBtn').textContent = '📸 Cập nhật gương mặt';
-                    document.getElementById('l-faceStatus').innerHTML = '<span class="badge badge-success">✓ Đã đăng ký</span>';
-                    document.getElementById('f-faceEnabled').checked = true;
-                } else { showToast(res.data.error || 'Đăng ký thất bại', 'error'); }
-                btn.disabled = false;
+                    showToast('Đã xóa gương mặt', 'success');
+                    document.getElementById('faceStatus').innerHTML = '<span class="badge badge-info">ℹ Chưa đăng ký gương mặt</span>';
+                    document.getElementById('registerFaceBtn').textContent = '📸 Đăng ký gương mặt';
+                    document.getElementById('removeFaceBtn').style.display = 'none';
+                } else {
+                    showToast(res.data.error || 'Thất bại', 'error');
+                }
             });
         }
 
@@ -201,10 +263,44 @@
         }
 
         function saveLanguage() {
-            apiFetch('/api/users/profile', { method: 'PUT', body: { language: document.getElementById('l-language').value } }).then(function(res) {
-                if (res.ok) { showToast('Đã lưu ngôn ngữ', 'success'); } else { showToast('Lỗi', 'error'); }
+            var lang = document.getElementById('l-language').value;
+            apiFetch('/api/users/profile', { method: 'PUT', body: { language: lang } }).then(function(res) {
+                if (res.ok) { showToast('Đã lưu ngôn ngữ', 'success'); applyLanguage(lang); } else { showToast('Lỗi', 'error'); }
             });
         }
+
+        function uploadAvatar(file) {
+            var formData = new FormData();
+            formData.append('avatar', file);
+            apiFetch('/api/users/avatar', { method: 'POST', body: formData }).then(function(res) {
+                if (res.ok) {
+                    showToast('Cập nhật ảnh đại diện thành công', 'success');
+                    var img = document.getElementById('avatarImg');
+                    img.src = res.data.avatarUrl + '?t=' + Date.now();
+                    img.style.display = '';
+                    document.getElementById('avatarPlaceholder').style.display = 'none';
+                } else {
+                    showToast(res.data.error || 'Tải ảnh thất bại', 'error');
+                }
+            });
+        }
+
+        document.getElementById('avatarInput').addEventListener('change', function(e) {
+            var file = e.target.files && e.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('Ảnh phải nhỏ hơn 5MB', 'error');
+                    this.value = '';
+                    return;
+                }
+                if (!file.type.startsWith('image/')) {
+                    showToast('Chỉ chấp nhận file ảnh', 'error');
+                    this.value = '';
+                    return;
+                }
+                uploadAvatar(file);
+            }
+        });
     </script>
 </body>
 </html>
