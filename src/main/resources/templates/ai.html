@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('Trợ lý AI')"></head>
+<body>
+    <nav th:replace="fragments/layout :: navbar('ai')"></nav>
+    <aside th:replace="fragments/layout :: sidebar('ai')"></aside>
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Trợ lý AI</h1>
+            <p class="page-subtitle">Hỏi và thực hiện giao dịch bằng ngôn ngữ tự nhiên</p>
+        </div>
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-msg bot">
+                    <div class="chat-msg-content">Xin chào! Tôi là trợ lý AI. Tôi có thể giúp bạn chuyển tiền, xem số dư, xem lịch sử và nhiều hơn thế.</div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Nhập câu lệnh...">
+                <button id="chatSendBtn" class="btn btn-primary">Gửi</button>
+            </div>
+        </div>
+    </main>
+    <div th:replace="fragments/layout :: toast"></div>
+    <div th:replace="fragments/layout :: scripts"></div>
+    <style>
+        .chat-container { max-width: 700px; margin: 0 auto; background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+        .chat-messages { height: 400px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .chat-msg { display: flex; }
+        .chat-msg.user { justify-content: flex-end; }
+        .chat-msg-content { max-width: 80%; padding: 10px 16px; border-radius: 16px; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; }
+        .chat-msg.bot .chat-msg-content { background: var(--primary-glow); color: var(--text); border-bottom-left-radius: 4px; }
+        .chat-msg.user .chat-msg-content { background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+        .chat-input-area { display: flex; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--border); background: var(--bg-elevated); }
+        .chat-input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border-light); border-radius: var(--radius-sm); font-size: 0.9rem; outline: none; background: var(--input-bg); color: var(--text); }
+        .chat-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+    </style>
+    <script>
+        document.getElementById('chatSendBtn').addEventListener('click', sendMessage);
+        document.getElementById('chatInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') sendMessage(); });
+
+        function sendMessage() {
+            var input = document.getElementById('chatInput');
+            var text = input.value.trim();
+            if (!text) return;
+
+            addMessage(text, 'user');
+            input.value = '';
+            input.disabled = true;
+            document.getElementById('chatSendBtn').disabled = true;
+
+            apiFetch('/api/ai/chat', { method: 'POST', body: { text: text } }).then(function(res) {
+                if (res.ok) {
+                    addMessage(res.data.message || 'Đã xử lý', 'bot');
+                } else {
+                    addMessage('Lỗi: ' + (res.data.error || 'Không thể xử lý'), 'bot');
+                }
+            }).catch(function() {
+                addMessage('Máy chủ AI chưa kết nối. Vui lòng khởi động python-ai.', 'bot');
+            }).finally(function() {
+                input.disabled = false;
+                document.getElementById('chatSendBtn').disabled = false;
+                input.focus();
+            });
+        }
+
+        function addMessage(text, role) {
+            var container = document.getElementById('chatMessages');
+            var div = document.createElement('div');
+            div.className = 'chat-msg ' + role;
+            div.innerHTML = '<div class="chat-msg-content">' + escapeHtml(text) + '</div>';
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            var d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+    </script>
+</body>
+</html>

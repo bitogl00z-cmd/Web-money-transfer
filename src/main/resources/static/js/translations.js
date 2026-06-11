@@ -9,6 +9,7 @@ var translations = {
         'sidebar.history': 'Lịch sử',
         'sidebar.scheduled': 'Định kỳ',
         'sidebar.settings': 'Cài đặt',
+        'sidebar.ai': 'Trợ lý AI',
         'sidebar.admin': 'Quản trị',
         'sidebar.logout': 'Đăng xuất',
     },
@@ -22,6 +23,7 @@ var translations = {
         'sidebar.history': 'History',
         'sidebar.scheduled': 'Scheduled',
         'sidebar.settings': 'Settings',
+        'sidebar.ai': 'AI Assistant',
         'sidebar.admin': 'Admin',
         'sidebar.logout': 'Logout',
     }
