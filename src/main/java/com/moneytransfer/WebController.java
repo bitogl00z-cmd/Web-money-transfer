@@ -10,11 +10,15 @@ public class WebController {
     @GetMapping("/login") public String login() { return "login"; }
     @GetMapping("/register") public String register() { return "register"; }
     @GetMapping("/dashboard") public String dashboard() { return "dashboard"; }
+
     @GetMapping("/transfer") public String transfer() { return "transfer"; }
+    @GetMapping("/receipt") public String receipt() { return "receipt"; }
+    @GetMapping("/qr") public String qr() { return "qr"; }
     @GetMapping("/history") public String history() { return "history"; }
     @GetMapping("/beneficiaries") public String beneficiaries() { return "beneficiaries"; }
     @GetMapping("/scheduled") public String scheduled() { return "scheduled"; }
     @GetMapping("/profile") public String profile() { return "redirect:/settings"; }
+    @GetMapping("/ai") public String ai() { return "ai"; }
     @GetMapping("/settings") public String settings() { return "settings"; }
     @GetMapping("/") public String root() { return "redirect:/login"; }
     @GetMapping("/logout") public String logout(HttpServletResponse response) {
