@@ -180,6 +180,11 @@ public class TransactionService {
         return transactionRepository.findById(id);
     }
 
+    public Page<Transaction> getRecentTransactions(List<Long> accountIds, int limit) {
+        return transactionRepository.findByFromAccountIdInOrToAccountIdInOrderByCreatedAtDesc(
+                accountIds, accountIds, Pageable.ofSize(limit));
+    }
+
     private String generateTransactionCode() {
         String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         Random random = new Random();
