@@ -1,0 +1,135 @@
+{
+  "intents": [
+    {
+      "intent": "transfer",
+      "patterns": [
+        "chuyển 500k cho user2",
+        "gửi cho Nam 1 triệu",
+        "chuyển khoản 200000 cho user3",
+        "chuyển tiền cho Hùng 500 nghìn",
+        "gửi 300k đến tài khoản user4",
+        "chuyển 1 triệu rưỡi cho bạn Hoa",
+        "chuyển 2 triệu cho tài khoản 12345",
+        "gửi 750000 cho user5",
+        "chuyển 50k đến user6",
+        "chuyển khoản 3 triệu cho user7",
+        "gửi tiền 800k cho user8",
+        "chuyển 1.2 triệu đến user9",
+        "chuyển 5 trăm cho user10",
+        "gửi 2 triệu rưỡi cho user11",
+        "chuyển 4 triệu đến tài khoản 67890"
+      ],
+      "entities": ["amount", "target"]
+    },
+    {
+      "intent": "balance",
+      "patterns": [
+        "xem số dư",
+        "tài khoản còn bao nhiêu",
+        "kiểm tra số dư",
+        "số dư tài khoản",
+        "xem tiền trong tài khoản",
+        "còn bao nhiêu tiền",
+        "cho tôi xem số dư",
+        "số dư hiện tại",
+        "kiểm tra tài khoản",
+        "xem số dư tài khoản của tôi"
+      ],
+      "entities": []
+    },
+    {
+      "intent": "history",
+      "patterns": [
+        "xem giao dịch gần đây",
+        "lịch sử giao dịch",
+        "giao dịch 7 ngày qua",
+        "xem lịch sử chuyển tiền",
+        "cho tôi xem giao dịch",
+        "các giao dịch gần nhất",
+        "lịch sử chuyển khoản",
+        "xem các giao dịch đã thực hiện",
+        "giao dịch tháng này",
+        "sao kê gần đây"
+      ],
+      "entities": ["date_range"]
+    },
+    {
+      "intent": "create_user",
+      "patterns": [
+        "tạo user mới tên Hùng",
+        "tạo tài khoản cho Nam",
+        "đăng ký người dùng mới tên Lan",
+        "tạo user username hùng123",
+        "thêm người dùng mới",
+        "tạo tài khoản mới",
+        "đăng ký thành viên mới",
+        "tạo user cho nhân viên mới",
+        "mở tài khoản cho Khánh",
+        "tạo username mới"
+      ],
+      "entities": ["target"]
+    },
+    {
+      "intent": "help",
+      "patterns": [
+        "ai có thể làm gì",
+        "hỗ trợ",
+        "bạn có thể làm gì",
+        "trợ giúp",
+        "hướng dẫn",
+        "giúp tôi",
+        "các tính năng",
+        "bạn là ai",
+        "chức năng của bạn",
+        "có thể giúp gì"
+      ],
+      "entities": []
+    },
+    {
+      "intent": "greeting",
+      "patterns": [
+        "xin chào",
+        "hello",
+        "chào bạn",
+        "hi",
+        "chào",
+        "chào bot",
+        "hey",
+        "helo",
+        "chào trợ lý",
+        "xin chào trợ lý"
+      ],
+      "entities": []
+    },
+    {
+      "intent": "fallback",
+      "patterns": [
+        "thời tiết hôm nay thế nào",
+        "ai là tổng thống mỹ",
+        "mấy giờ rồi",
+        "bạn tên gì",
+        "nấu ăn như thế nào",
+        "máy bay giá bao nhiêu",
+        "học lập trình ở đâu",
+        "bài hát hay nhất",
+        "phim gì hay",
+        "công thức nấu phở"
+      ],
+      "entities": []
+    }
+  ],
+  "entity_patterns": {
+    "amount": [
+      "(\\d+[\\.]?\\d*)\\s*(k|ngàn|nghìn|triệu|tr|tỷ)",
+      "(\\d+[\\.]?\\d*)",
+      "một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười"
+    ],
+    "target": [
+      "cho\\s+(\\w+)",
+      "đến\\s+(\\w+)",
+      "tên\\s+(\\w+)",
+      "username\\s+(\\w+)",
+      "tài khoản\\s+(\\w+)"
+    ]
+  }
+}
