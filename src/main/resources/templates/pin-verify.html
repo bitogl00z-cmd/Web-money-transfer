@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('Xác thực PIN')"></head>
+<body style="background:linear-gradient(135deg, #0f172a, #1e293b);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border-light);box-shadow:var(--shadow-lg);padding:40px;max-width:400px;width:100%;">
+        <div style="text-align:center;margin-bottom:28px;">
+            <div style="font-size:3rem;margin-bottom:8px;">🔐</div>
+            <h1 style="font-size:1.4rem;font-weight:700;color:var(--text);">Nhập mã PIN</h1>
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-top:4px;">Nhập mã PIN để tiếp tục</p>
+        </div>
+        <div id="errorMsg" style="display:none;background:rgba(239,68,68,0.15);color:#f87171;padding:12px 16px;border-radius:var(--radius-sm);font-size:0.85rem;margin-bottom:16px;"></div>
+        <form id="pinForm">
+            <div class="form-group">
+                <input type="password" id="pin" class="form-input" placeholder="Nhập mã PIN" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="off" style="text-align:center;font-size:1.5rem;letter-spacing:8px;" required>
+            </div>
+            <button type="submit" id="pinBtn" class="btn btn-primary btn-lg btn-full">Xác thực PIN</button>
+        </form>
+        <p style="text-align:center;margin-top:20px;font-size:0.85rem;color:var(--text-muted);"><a href="/dashboard" style="color:var(--primary);">Bỏ qua</a></p>
+    </div>
+    <script th:src="@{/js/banking.js}"></script>
+    <script>
+        document.getElementById('pinForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            var btn = document.getElementById('pinBtn');
+            var err = document.getElementById('errorMsg');
+            btn.disabled = true; btn.textContent = 'Đang xác thực...';
+            err.style.display = 'none';
+            var res = await apiFetch('/api/pin/verify', {
+                method: 'POST',
+                body: { pin: document.getElementById('pin').value }
+            });
+            if (res.ok && res.data.valid) {
+                window.location.href = '/dashboard';
+            } else {
+                err.textContent = res.data.error || 'Sai mã PIN';
+                err.style.display = 'block';
+                btn.disabled = false; btn.textContent = 'Xác thực PIN';
+            }
+        });
+    </script>
+</body>
+</html>

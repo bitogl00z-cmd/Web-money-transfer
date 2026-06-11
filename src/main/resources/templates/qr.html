@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/layout :: head('Mã QR')"></head>
+<body>
+    <nav th:replace="fragments/layout :: navbar('qr')"></nav>
+    <aside th:replace="fragments/layout :: sidebar('qr')"></aside>
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Mã QR</h1>
+            <p class="page-subtitle">Quản lý mã QR cá nhân và quét mã nhận tiền</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px;">
+            <div class="card" style="text-align:center;">
+                <div class="card-header"><div class="card-title">📤 Mã QR của tôi</div></div>
+                <div class="card-body">
+                    <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Quét mã này để người khác chuyển tiền cho bạn</p>
+                    <div id="myQrCode" style="display:inline-block;padding:16px;background:#fff;border-radius:var(--radius-sm);">
+                        <span style="color:var(--text-muted);">Đang tải...</span>
+                    </div>
+                    <div id="myQrAccount" style="margin-top:12px;font-size:0.9rem;color:var(--text-muted);"></div>
+                    <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="downloadQr()">💾 Tải xuống</button>
+                </div>
+            </div>
+            <div class="card" style="text-align:center;">
+                <div class="card-header"><div class="card-title">📥 Quét mã QR</div></div>
+                <div class="card-body">
+                    <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">Quét mã QR của người khác để chuyển tiền</p>
+                    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                        <button id="scanQrBtn" class="btn btn-primary btn-lg">📷 Mở camera</button>
+                        <button class="btn btn-outline btn-lg" onclick="document.getElementById('qrFileInput').click()">🖼 Tải ảnh QR</button>
+                        <input type="file" id="qrFileInput" accept="image/*" style="display:none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <div th:replace="fragments/layout :: toast"></div>
+    <div th:replace="fragments/layout :: scripts"></div>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script>
+        var myQrCanvas = null;
+
+        apiFetch('/api/accounts').then(function(res) {
+            if (res.ok && res.data.length) {
+                var acct = res.data[0];
+                document.getElementById('myQrAccount').textContent = 'STK: ' + acct.accountNumber;
+                var qrDiv = document.getElementById('myQrCode');
+                qrDiv.innerHTML = '';
+                myQrCanvas = new QRCode(qrDiv, {
+                    text: 'acct:' + acct.accountNumber,
+                    width: 200,
+                    height: 200,
+                    colorDark: '#0f172a',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                document.getElementById('myQrCode').innerHTML = '<span style="color:var(--text-muted);">Chưa có tài khoản</span>';
+            }
+        });
+
+        function downloadQr() {
+            var canvas = document.querySelector('#myQrCode canvas');
+            if (!canvas) { showToast('Chưa có mã QR', 'error'); return; }
+            var link = document.createElement('a');
+            link.download = 'qr-money-transfer.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function decodeQrImage(img) {
+            var canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code && code.data.startsWith('acct:')) {
+                var acctNumber = code.data.substring(5);
+                showToast('Đã quét mã: ' + acctNumber + ' — đang chuyển...', 'success');
+                window.location.href = '/transfer?to=' + acctNumber;
+            } else {
+                showToast('Không tìm thấy mã QR hợp lệ', 'error');
+            }
+        }
+
+        document.getElementById('qrFileInput').addEventListener('change', function(e) {
+            var file = e.target.files && e.target.files[0];
+            if (!file) return;
+            var img = new Image();
+            img.onload = function() { decodeQrImage(img); };
+            img.src = URL.createObjectURL(file);
+        });
+
+        document.getElementById('scanQrBtn').addEventListener('click', function() {
+            openCamera(function(base64) {
+                var img = new Image();
+                img.onload = function() { decodeQrImage(img); };
+                img.src = 'data:image/jpeg;base64,' + base64;
+            });
+        });
+    </script>
+</body>
+</html>
