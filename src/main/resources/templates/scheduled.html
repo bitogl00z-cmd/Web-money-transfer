@@ -6,7 +6,7 @@
     <aside th:replace="fragments/layout :: sidebar('scheduled')"></aside>
     <main class="main-content">
         <div class="page-header">
-            <h1 class="page-title">⏰ Thanh toán định kỳ</h1>
+            <h1 class="page-title">Thanh toán định kỳ</h1>
             <p class="page-subtitle">Lên lịch chuyển tiền tự động</p>
         </div>
 
@@ -115,11 +115,11 @@
                     var freqLabel = {ONE_TIME:'Một lần',WEEKLY:'Hàng tuần',MONTHLY:'Hàng tháng'}[p.frequency] || p.frequency;
                     var statusClass = {ACTIVE:'badge-success',COMPLETED:'badge-info',PAUSED:'badge-warning',CANCELLED:'badge-gray'}[p.status] || 'badge-gray';
                     var statusLabel = {ACTIVE:'Đang chạy',COMPLETED:'Hoàn tất',PAUSED:'Tạm dừng',CANCELLED:'Đã hủy'}[p.status] || p.status;
-                    row.innerHTML = '<td style="font-family:monospace;">' + p.toAccountNumber + '</td>'
+                    row.innerHTML = '<td style="font-family:monospace;">' + escapeHtml(p.toAccountNumber) + '</td>'
                         + '<td style="font-weight:600;">' + formatVND(p.amount) + '</td>'
-                        + '<td>' + freqLabel + '</td>'
-                        + '<td>' + runStr + '</td>'
-                        + '<td><span class="badge ' + statusClass + '">' + statusLabel + '</span></td>'
+                        + '<td>' + escapeHtml(freqLabel) + '</td>'
+                        + '<td>' + escapeHtml(runStr) + '</td>'
+                        + '<td><span class="badge ' + escapeHtml(statusClass) + '">' + escapeHtml(statusLabel) + '</span></td>'
                         + '<td>' + (p.status === 'ACTIVE' ? '<button onclick="cancel(' + p.id + ')" class="btn btn-danger btn-sm">Hủy</button>' : '') + '</td>';
                 });
             });

@@ -77,4 +77,15 @@ public class JwtUtil {
         Claims claims = validateToken(token);
         return claims.getExpiration().getTime() - System.currentTimeMillis();
     }
+
+    public String generateToken(Long userId, String username, String role, long ttlSeconds) {
+        return Jwts.builder()
+            .subject(username)
+            .claim("userId", userId)
+            .claim("role", role)
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + ttlSeconds * 1000))
+            .signWith(secretKey)
+            .compact();
+    }
 }

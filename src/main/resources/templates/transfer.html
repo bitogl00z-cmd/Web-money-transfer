@@ -6,7 +6,7 @@
     <aside th:replace="fragments/layout :: sidebar('transfer')"></aside>
     <main class="main-content">
         <div class="page-header">
-            <h1 class="page-title">💸 Chuyển tiền</h1>
+            <h1 class="page-title">Chuyển tiền</h1>
             <p class="page-subtitle">Chuyển tiền đến tài khoản khác nhanh chóng và an toàn</p>
         </div>
         <div class="card" style="max-width:520px;">
@@ -21,6 +21,9 @@
                 <div class="form-group">
                     <label class="form-label">Đến tài khoản</label>
                     <input type="text" id="toAccount" class="form-input" placeholder="Nhập số tài khoản đích" required>
+                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                        <button type="button" id="scanQrBtn" class="btn btn-outline btn-sm">📷 Quét mã QR</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Số tiền</label>
@@ -32,19 +35,76 @@
                 </div>
                 <button type="submit" id="transferBtn" class="btn btn-primary btn-lg btn-full">💸 Chuyển tiền</button>
             </form>
-            <p style="margin-top:16px;font-size:0.8rem;color:var(--text-muted);">* Giao dịch trên <strong>10.000.000₫</strong> cần xác thực gương mặt</p>
+            <div class="card" style="margin-top:20px;">
+                <div class="card-header"><div class="card-title">🕐 Tài khoản gần đây</div></div>
+                <div id="recentList" style="display:flex;flex-wrap:wrap;gap:8px;">Đang tải...</div>
+            </div>
             <p style="margin-top:8px;text-align:center;"><a href="/dashboard" class="btn btn-outline btn-sm">← Về tổng quan</a></p>
         </div>
     </main>
     <div th:replace="fragments/layout :: toast"></div>
     <div th:replace="fragments/layout :: scripts"></div>
     <script>
-        var currentFaceToken = null;
-        var userFaceEnabled = false;
         var currentAccount = null;
+        var userPinSet = false;
+        var userPinLoaded = false;
+        var currentPinToken = null;
+
+        // Fill ?to= from QR scan page
+        var params = new URLSearchParams(window.location.search);
+        var toAcct = params.get('to');
+        if (toAcct) document.getElementById('toAccount').value = toAcct;
+
+        async function requirePin() {
+            var pin = prompt('Nhập mã PIN giao dịch:');
+            if (!pin) return null;
+            var pinRes = await apiFetch('/api/pin/verify', { method: 'POST', body: { pin: pin } });
+            if (pinRes.ok && pinRes.data.pinToken) return pinRes.data.pinToken;
+            showToast('Sai mã PIN', 'error');
+            return null;
+        }
+
+        function showReceipt(d) {
+            openModal(
+                '<div style="text-align:center;">' +
+                    '<div style="font-size:2.5rem;margin-bottom:8px;">✅</div>' +
+                    '<div class="modal-title" style="color:#10b981;">Giao dịch thành công</div>' +
+                '</div>' +
+                '<div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;margin:16px 0;">' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);font-size:0.85rem;">' +
+                        '<span style="color:var(--text-muted);">Mã giao dịch</span>' +
+                        '<span style="font-family:monospace;font-weight:600;color:var(--text);">' + d.transactionCode + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);font-size:0.85rem;">' +
+                        '<span style="color:var(--text-muted);">Từ tài khoản</span>' +
+                        '<span style="font-family:monospace;font-weight:600;color:var(--text);">' + d.fromAccount + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);font-size:0.85rem;">' +
+                        '<span style="color:var(--text-muted);">Đến tài khoản</span>' +
+                        '<span style="font-family:monospace;font-weight:600;color:var(--text);">' + d.toAccount + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);font-size:0.85rem;">' +
+                        '<span style="color:var(--text-muted);">Số tiền</span>' +
+                        '<span style="font-weight:700;font-size:1.1rem;color:#10b981;">' + formatVND(d.amount) + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);font-size:0.85rem;">' +
+                        '<span style="color:var(--text-muted);">Nội dung</span>' +
+                        '<span style="color:var(--text);text-align:right;max-width:220px;">' + d.description + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.85rem;">' +
+                        '<span style="color:var(--text-muted);">Thời gian</span>' +
+                        '<span style="color:var(--text);">' + d.date + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="modal-actions" style="justify-content:center;">' +
+                    '<button onclick="closeModal()" class="btn btn-primary">Đóng</button>' +
+                '</div>'
+            );
+        }
 
         apiFetch('/api/users/profile').then(function(res) {
-            if (res.ok) { userFaceEnabled = res.data.faceEnabled; }
+            if (res.ok) { userPinSet = res.data.pinSet; }
+            userPinLoaded = true;
         });
 
         apiFetch('/api/accounts').then(function(res) {
@@ -53,6 +113,26 @@
                 var info = document.getElementById('accountInfo');
                 info.innerHTML = '<span style="font-size:0.85rem;color:var(--text-muted);">' + currentAccount.accountNumber + '</span>'
                     + '<div style="font-size:1.5rem;font-weight:700;color:var(--text);margin-top:2px;">' + formatVND(currentAccount.balance) + '</div>';
+            }
+        });
+
+        apiFetch('/api/recent-transfers').then(function(res) {
+            if (res.ok && res.data.length) {
+                var list = document.getElementById('recentList');
+                if (!list) return;
+                list.innerHTML = '';
+                res.data.forEach(function(rt) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-outline btn-sm';
+                    btn.style.margin = '0';
+                    btn.textContent = '🏦 ' + rt.toAccountNumber + (rt.toAccountName ? ' (' + rt.toAccountName + ')' : '');
+                    btn.onclick = function() { document.getElementById('toAccount').value = rt.toAccountNumber; };
+                    list.appendChild(btn);
+                });
+            } else {
+                var list = document.getElementById('recentList');
+                if (list) list.textContent = 'Chưa có giao dịch nào';
             }
         });
 
@@ -70,52 +150,48 @@
                 amount: amount,
                 description: document.getElementById('description').value
             };
+            var headers = {};
 
-            if (amount > 10000000) {
-                if (!currentFaceToken) {
-                    if (!userFaceEnabled) {
-                        msg.style.display = 'block';
-                        msg.style.background = '#fce4ec'; msg.style.color = 'var(--danger)';
-                        msg.innerHTML = '❌ Bạn chưa cập nhật gương mặt. Vui lòng vào <a href="/settings" style="color:var(--primary);font-weight:600;">Cài đặt</a> để đăng ký.';
-                        btn.disabled = false; btn.textContent = '💸 Chuyển tiền';
-                        return;
-                    }
-                    msg.style.display = 'block';
-                    msg.style.background = '#fef3c7'; msg.style.color = '#92400e';
-                    msg.textContent = 'Giao dịch trên 10.000.000₫ cần xác thực gương mặt. Đang mở camera...';
-                    await new Promise(function(resolve) {
-                        openCamera(async function(base64) {
-                            msg.textContent = 'Đang xác thực...';
-                            var faceRes = await apiFetch('/api/face/verify-for-transfer', {
-                                method: 'POST',
-                                body: { faceImage: base64 }
-                            });
-                            if (faceRes.ok && faceRes.data.faceToken) {
-                                currentFaceToken = faceRes.data.faceToken;
-                                showToast('Xác thực gương mặt thành công', 'success');
-                                resolve();
-                            } else {
-                                msg.style.background = '#fce4ec'; msg.style.color = 'var(--danger)';
-                                msg.textContent = faceRes.data.error || 'Xác thực thất bại';
-                                msg.style.display = 'block';
-                                btn.disabled = false; btn.textContent = '💸 Chuyển tiền';
-                                resolve();
-                            }
-                        });
-                    });
-                    if (!currentFaceToken) { btn.disabled = false; btn.textContent = '💸 Chuyển tiền'; return; }
-                }
-                body.faceToken = currentFaceToken;
+            // Always require PIN if user has one
+            if (!userPinLoaded) {
+                var profileRes = await apiFetch('/api/users/profile');
+                if (profileRes.ok) { userPinSet = profileRes.data.pinSet; }
+                userPinLoaded = true;
+            }
+            if (userPinSet) {
+                currentPinToken = await requirePin();
+                if (!currentPinToken) { btn.disabled = false; btn.textContent = '💸 Chuyển tiền'; return; }
+                headers['x-pin-token'] = currentPinToken;
             }
 
-            var res = await apiFetch('/api/transactions/transfer', { method: 'POST', body: body });
+            // Face verification for amounts >= 10,000,000
+            var faceToken = null;
+            if (amount >= 10000000) {
+                var faceResult = await new Promise(function(resolve) {
+                    openCamera(function(base64) { resolve(base64); });
+                });
+                if (!faceResult) { btn.disabled = false; btn.textContent = '💸 Chuyển tiền'; return; }
+                var faceRes = await apiFetch('/api/face/verify-for-transfer', { method: 'POST', body: { faceImage: faceResult } });
+                if (faceRes.ok && faceRes.data.faceToken) {
+                    faceToken = faceRes.data.faceToken;
+                    body.faceToken = faceToken;
+                } else {
+                    showToast('Xác thực gương mặt thất bại', 'error');
+                    btn.disabled = false; btn.textContent = '💸 Chuyển tiền'; return;
+                }
+            }
+
+            var res = await apiFetch('/api/transactions/transfer', { method: 'POST', body: body, headers: headers });
 
             if (res.ok) {
-                msg.style.display = 'block';
-                msg.style.background = '#d1fae5'; msg.style.color = '#065f46';
-                msg.textContent = '✅ Chuyển tiền thành công! Mã GD: ' + res.data.transactionCode;
+                var txCode = encodeURIComponent(res.data.transactionCode);
+                var fromAcct = encodeURIComponent(currentAccount ? currentAccount.accountNumber : '');
+                var toAcct = encodeURIComponent(document.getElementById('toAccount').value);
+                var amt = encodeURIComponent(amount);
+                var desc = encodeURIComponent(document.getElementById('description').value || 'Chuyển tiền');
+                var date = encodeURIComponent(new Date().toLocaleString('vi-VN'));
+                window.location.href = '/receipt?tx=' + txCode + '&from=' + fromAcct + '&to=' + toAcct + '&amount=' + amt + '&desc=' + desc + '&date=' + date;
                 document.getElementById('transferForm').reset();
-                currentFaceToken = null;
                 if (currentAccount) {
                     currentAccount.balance -= amount;
                     var info = document.getElementById('accountInfo');
@@ -129,6 +205,31 @@
             }
             btn.disabled = false; btn.textContent = '💸 Chuyển tiền';
         });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script>
+    document.getElementById('scanQrBtn').addEventListener('click', function() {
+        openCamera(function(base64) {
+            var img = new Image();
+            img.onload = function() {
+                var canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                var ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                var code = jsQR(imageData.data, imageData.width, imageData.height);
+                if (code && code.data.startsWith('acct:')) {
+                    var acctNumber = code.data.substring(5);
+                    document.getElementById('toAccount').value = acctNumber;
+                    showToast('Đã quét mã: ' + escapeHtml(acctNumber), 'success');
+                } else {
+                    showToast('Không tìm thấy mã QR hợp lệ', 'error');
+                }
+            };
+            img.src = 'data:image/jpeg;base64,' + base64;
+        });
+    });
     </script>
 </body>
 </html>

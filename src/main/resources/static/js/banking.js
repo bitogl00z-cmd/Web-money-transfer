@@ -1,3 +1,10 @@
+function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
 function formatVND(amount) {
     var num = Number(amount);
     if (isNaN(num)) return '0₫';
@@ -17,7 +24,8 @@ function showToast(message, type) {
     var toast = document.createElement('div');
     toast.className = 'toast toast-' + type;
     var icons = { success: '✓', error: '✕', info: 'ℹ' };
-    toast.innerHTML = '<span>' + (icons[type] || '') + '</span> ' + message;
+    toast.innerHTML = '<span>' + (icons[type] || '') + '</span> ';
+    toast.appendChild(document.createTextNode(message));
     container.appendChild(toast);
     setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(function() { toast.remove(); }, 300); }, 3000);
 }
@@ -146,7 +154,7 @@ function toggleTheme() {
     if (btn) btn.textContent = isLight ? '🌙' : '☀️';
 }
 
-function showNotificationBox(title, message, type) {
+function showNotificationBox(title, messageHtml, type) {
     var container = document.getElementById('notificationContainer');
     if (!container) {
         container = document.createElement('div');
@@ -156,7 +164,14 @@ function showNotificationBox(title, message, type) {
     }
     var box = document.createElement('div');
     box.style.cssText = 'background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:16px;animation:slideIn 0.3s ease;border-left:4px solid ' + (type === 'success' ? '#10b981' : '#ef4444') + ';';
-    box.innerHTML = '<div style="font-weight:600;font-size:0.95rem;margin-bottom:4px;">' + title + '</div><div style="font-size:0.85rem;color:#666;">' + message + '</div>';
+    var titleDiv = document.createElement('div');
+    titleDiv.style.cssText = 'font-weight:600;font-size:0.95rem;margin-bottom:4px;';
+    titleDiv.textContent = title;
+    var msgDiv = document.createElement('div');
+    msgDiv.style.cssText = 'font-size:0.85rem;color:#666;';
+    msgDiv.innerHTML = messageHtml;
+    box.appendChild(titleDiv);
+    box.appendChild(msgDiv);
     container.appendChild(box);
     setTimeout(function() { box.style.opacity = '0'; box.style.transition = 'opacity 0.3s'; setTimeout(function() { box.remove(); }, 300); }, 8000);
 }
@@ -173,10 +188,11 @@ function connectWebSocket(userId) {
     stompClient.connect({}, function() {
         stompClient.subscribe('/topic/notifications/' + userId, function(msg) {
             var data = JSON.parse(msg.body);
-            var extra = data.transactionCode ? '<br><small style="color:#999;">GD: ' + data.transactionCode + '</small>' : '';
-            var bal = data.balance ? '<br><strong style="color:#059669;">' + data.balance + '</strong>' : '';
+            var safeMsg = escapeHtml(data.message || '');
+            var extra = data.transactionCode ? '<br><small style="color:#999;">GD: ' + escapeHtml(data.transactionCode) + '</small>' : '';
+            var bal = data.balance ? '<br><strong style="color:#059669;">' + escapeHtml(String(data.balance)) + '</strong>' : '';
             var isSuccess = data.type === 'SCHEDULED_PAYMENT';
-            showNotificationBox(data.title, data.message + bal + extra, isSuccess ? 'success' : 'error');
+            showNotificationBox(escapeHtml(data.title || ''), safeMsg + bal + extra, isSuccess ? 'success' : 'error');
         });
     });
 }

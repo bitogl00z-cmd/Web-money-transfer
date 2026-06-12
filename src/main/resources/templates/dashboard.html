@@ -39,8 +39,8 @@
         <div class="card" style="margin-bottom:24px;">
             <div class="card-header">
                 <div>
-                    <div class="card-title">Biểu đồ số dư 7 ngày</div>
-                    <div class="card-subtitle">Biến động số dư theo ngày</div>
+                    <div class="card-title">Thu / Chi 7 ngày qua</div>
+                    <div class="card-subtitle">Cột xanh: tiền về | Cột đỏ: tiền đi</div>
                 </div>
             </div>
             <div class="chart-container">
@@ -118,27 +118,43 @@
                 if (data.accounts && data.accounts.length) {
                     data.accounts.forEach(function(a) {
                         var row = abody.insertRow();
-                        var st = a.status === 'ACTIVE' ? '<span class="badge badge-success">Hoạt động</span>' : '<span class="badge badge-danger">' + a.status + '</span>';
-                        row.innerHTML = '<td style="font-family:monospace;font-weight:600;font-size:1rem;">' + a.accountNumber + '</td><td style="font-weight:600;">' + formatVND(a.balance) + '</td><td>' + st + '</td>';
+                        var st = a.status === 'ACTIVE' ? '<span class="badge badge-success">Hoạt động</span>' : '<span class="badge badge-danger">' + escapeHtml(a.status) + '</span>';
+                        row.innerHTML = '<td style="font-family:monospace;font-weight:600;font-size:1rem;">' + escapeHtml(a.accountNumber) + '</td><td style="font-weight:600;">' + formatVND(a.balance) + '</td><td>' + st + '</td>';
                     });
                 } else { abody.innerHTML = '<tr><td colspan="3" class="empty">Chưa có tài khoản</td></tr>'; }
                 var txBody = document.getElementById('txBody');
                 if (data.recentTransactions && data.recentTransactions.length) {
                     data.recentTransactions.forEach(function(tx) {
                         var row = txBody.insertRow();
-                        row.innerHTML = '<td style="font-family:monospace;font-size:0.85rem;">' + tx.transactionCode + '</td><td style="font-weight:600;">' + formatVND(tx.amount) + '</td><td><span class="badge badge-info">' + tx.type + '</span></td><td>' + formatDateShort(tx.createdAt) + '</td>';
+                        row.innerHTML = '<td style="font-family:monospace;font-size:0.85rem;">' + escapeHtml(tx.transactionCode) + '</td><td style="font-weight:600;">' + formatVND(tx.amount) + '</td><td><span class="badge badge-info">' + escapeHtml(tx.type) + '</span></td><td>' + escapeHtml(formatDateShort(tx.createdAt)) + '</td>';
                     });
                 } else {
                     txBody.innerHTML = '<tr><td colspan="4" class="empty">Chưa có giao dịch nào</td></tr>';
                 }
                 if (data.chartData) {
-                    new Chart(document.getElementById('balanceChart'), {
-                        type: 'line',
+                    var ctx = document.getElementById('balanceChart');
+                    var labels = data.chartData.map(function(d) { return d.date; });
+                    var incomes = data.chartData.map(function(d) { return d.income; });
+                    var expenses = data.chartData.map(function(d) { return d.expense; });
+                    new Chart(ctx, {
+                        type: 'bar',
                         data: {
-                            labels: data.chartData.map(function(d) { return d.date; }),
-                            datasets: [{ label: 'Số dư cuối ngày', data: data.chartData.map(function(d) { return d.balance; }), borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,0.1)', fill: true, tension: 0.3 }]
+                            labels: labels,
+                            datasets: [
+                                { label: 'Tiền về', data: incomes, backgroundColor: '#22c55e', borderRadius: 4 },
+                                { label: 'Tiền đi', data: expenses, backgroundColor: '#ef4444', borderRadius: 4 }
+                            ]
                         },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false, ticks: { callback: function(v) { return formatVND(v); } } } } }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } }
+                            },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { callback: function(v) { return formatVND(v); } } }
+                            }
+                        }
                     });
                 }
             })

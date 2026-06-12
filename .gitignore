@@ -12,3 +12,7 @@ app*.err
 .classpath
 .vscode/
 .superpowers/
+python-ai/models/phobert-intent/model.safetensors
+python-ai/__pycache__/
+uploads/
+*.pyc

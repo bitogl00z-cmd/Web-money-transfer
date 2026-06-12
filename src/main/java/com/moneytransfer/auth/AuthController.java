@@ -57,7 +57,7 @@ public class AuthController {
             String ip = httpRequest.getRemoteAddr();
             AuthResponse authResponse = authService.login(request, ip);
             authService.setAuthCookies(response, authResponse.accessToken(), authResponse.refreshToken());
-            return ResponseEntity.ok(Map.of("message", "Login successful", "userId", authResponse.userId()));
+            return ResponseEntity.ok(authResponse);
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

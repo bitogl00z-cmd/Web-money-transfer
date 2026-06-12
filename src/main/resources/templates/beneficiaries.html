@@ -6,7 +6,7 @@
     <aside th:replace="fragments/layout :: sidebar('beneficiaries')"></aside>
     <main class="main-content">
         <div class="page-header">
-            <h1 class="page-title">👥 Người thụ hưởng</h1>
+            <h1 class="page-title">Người thụ hưởng</h1>
             <p class="page-subtitle">Quản lý danh sách người nhận thường xuyên</p>
         </div>
         <div class="card" style="margin-bottom:24px;">
@@ -29,7 +29,7 @@
         function loadBeneficiaries() {
             fetch('/api/users/beneficiaries', { credentials: 'include' }).then(function(r) { return r.json(); }).then(function(data) {
                 var body = document.getElementById('beneficiariesBody'); body.innerHTML = '';
-                if (data.length) { data.forEach(function(b) { var row = body.insertRow(); row.innerHTML = '<td style="font-family:monospace;">' + b.accountNumber + '</td><td>' + (b.nickname || '') + '</td><td><button onclick="deleteBeneficiary(' + b.id + ')" class="btn btn-danger btn-sm">Xóa</button></td>'; }); }
+                if (data.length) { data.forEach(function(b) { var row = body.insertRow(); row.innerHTML = '<td style="font-family:monospace;">' + escapeHtml(b.accountNumber) + '</td><td>' + escapeHtml(b.nickname || '') + '</td><td><button onclick="deleteBeneficiary(' + b.id + ')" class="btn btn-danger btn-sm">Xóa</button></td>'; }); }
                 else { body.innerHTML = '<tr><td colspan="3" class="empty">Chưa có người thụ hưởng</td></tr>'; }
             });
         }

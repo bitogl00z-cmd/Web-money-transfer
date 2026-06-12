@@ -6,7 +6,7 @@
     <aside th:replace="fragments/layout :: sidebar('history')"></aside>
     <main class="main-content">
         <div class="page-header">
-            <h1 class="page-title">📋 Lịch sử giao dịch</h1>
+            <h1 class="page-title">Lịch sử giao dịch</h1>
             <p class="page-subtitle">Tra cứu giao dịch</p>
         </div>
         <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
@@ -36,7 +36,7 @@
                 if (data.content && data.content.length) {
                     data.content.forEach(function(tx) {
                         var row = body.insertRow();
-                        row.innerHTML = '<td style="font-family:monospace;font-size:0.85rem;">' + tx.transactionCode + '</td><td style="font-weight:600;">' + formatVND(tx.amount) + '</td><td><span class="badge badge-info">' + tx.type + '</span></td><td>' + (tx.description || '') + '</td><td>' + formatDate(tx.createdAt) + '</td>';
+                        row.innerHTML = '<td style="font-family:monospace;font-size:0.85rem;">' + escapeHtml(tx.transactionCode) + '</td><td style="font-weight:600;">' + formatVND(tx.amount) + '</td><td><span class="badge badge-info">' + escapeHtml(tx.type) + '</span></td><td>' + escapeHtml(tx.description || '') + '</td><td>' + formatDate(tx.createdAt) + '</td>';
                     });
                 } else { body.innerHTML = '<tr><td colspan="5" class="empty">Chưa có giao dịch nào</td></tr>'; }
             }).catch(function() { showToast('Không thể tải lịch sử', 'error'); });

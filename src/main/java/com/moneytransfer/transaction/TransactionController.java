@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import com.moneytransfer.recent.RecentTransferService;
+import com.moneytransfer.user.User;
+import com.moneytransfer.user.UserRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,13 +28,19 @@ public class TransactionController {
     private final AccountService accountService;
     private final AccountRepository accountRepository;
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final RecentTransferService recentTransferService;
 
     public TransactionController(TransactionService transactionService, AccountService accountService,
-                                  AccountRepository accountRepository, JwtUtil jwtUtil) {
+                                  AccountRepository accountRepository, JwtUtil jwtUtil,
+                                  UserRepository userRepository,
+                                  RecentTransferService recentTransferService) {
         this.transactionService = transactionService;
         this.accountService = accountService;
         this.accountRepository = accountRepository;
         this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
+        this.recentTransferService = recentTransferService;
     }
 
     @PostMapping("/transfer")
@@ -40,12 +49,31 @@ public class TransactionController {
         try {
             Claims claims = (Claims) auth.getDetails();
             Long userId = ((Integer) claims.get("userId")).longValue();
+            User user = userRepository.findById(userId).orElseThrow();
+            if (user.getPinSet() != null && user.getPinSet()) {
+                String pinToken = request.getHeader("x-pin-token");
+                if (pinToken == null || pinToken.isBlank()) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "PIN verification required", "pinRequired", true));
+                }
+                try {
+                    Claims pinClaims = jwtUtil.validateToken(pinToken);
+                    Long pinUserId = ((Integer) pinClaims.get("userId")).longValue();
+                    if (!pinUserId.equals(userId)) {
+                        return ResponseEntity.badRequest().body(Map.of("error", "Invalid PIN token"));
+                    }
+                } catch (Exception e) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "PIN token expired or invalid", "pinRequired", true));
+                }
+            }
             Long fromId = Long.valueOf(body.get("fromAccountId").toString());
             String toAccountNumber = body.get("toAccountNumber").toString();
             Account toAccount = accountRepository.findByAccountNumber(toAccountNumber)
                     .orElseThrow(() -> new IllegalArgumentException("Account not found: " + toAccountNumber));
             Long toId = toAccount.getId();
             BigDecimal amount = new BigDecimal(body.get("amount").toString());
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Số tiền phải lớn hơn 0"));
+            }
             String description = (String) body.getOrDefault("description", "");
 
             // Face verification check for amounts > 10,000,000
@@ -72,6 +100,15 @@ public class TransactionController {
 
             String ip = request.getRemoteAddr();
             Transaction tx = transactionService.transfer(fromId, toId, amount, description, userId, ip);
+
+            // Record recent transfer
+            Account targetAccount = accountRepository.findByAccountNumber(toAccountNumber).orElse(null);
+            if (targetAccount != null) {
+                com.moneytransfer.user.User toUser = userRepository.findById(targetAccount.getUserId()).orElse(null);
+                String toName = toUser != null ? toUser.getFullName() : "";
+                recentTransferService.recordTransfer(userId, targetAccount.getId(), toAccountNumber, toName);
+            }
+
             return ResponseEntity.ok(Map.of("transactionCode", tx.getTransactionCode(), "status", tx.getStatus()));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -91,6 +128,9 @@ public class TransactionController {
                 return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
             }
             BigDecimal amount = new BigDecimal(body.get("amount").toString());
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Số tiền phải lớn hơn 0"));
+            }
             String ip = request.getRemoteAddr();
             Transaction tx = transactionService.deposit(accountId, amount, "Deposit", userId, ip);
             return ResponseEntity.ok(Map.of("transactionCode", tx.getTransactionCode(), "status", tx.getStatus()));
@@ -112,6 +152,9 @@ public class TransactionController {
                 return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
             }
             BigDecimal amount = new BigDecimal(body.get("amount").toString());
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Số tiền phải lớn hơn 0"));
+            }
             String ip = request.getRemoteAddr();
             Transaction tx = transactionService.withdraw(accountId, amount, "Withdrawal", userId, ip);
             return ResponseEntity.ok(Map.of("transactionCode", tx.getTransactionCode(), "status", tx.getStatus()));

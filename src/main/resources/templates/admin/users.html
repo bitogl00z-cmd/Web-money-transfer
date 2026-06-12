@@ -7,7 +7,7 @@
     <main class="main-content">
         <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
             <div>
-                <h1 class="page-title">👥 Quản lý người dùng</h1>
+                <h1 class="page-title">Quản lý người dùng</h1>
                 <p class="page-subtitle">Xem và quản lý tất cả người dùng hệ thống</p>
             </div>
             <span class="badge badge-info" style="font-size:1rem;padding:8px 16px;" id="userCount">0 người dùng</span>
@@ -49,7 +49,7 @@
                     var row = body.insertRow();
                     var roleBadge = u.role === 'ADMIN' ? '<span class="badge badge-purple">ADMIN</span>' : '<span class="badge badge-gray">USER</span>';
                     var statusBadge = u.status === 'LOCKED' ? '<span class="badge badge-danger">KHÓA</span>' : '<span class="badge badge-success">HOẠT ĐỘNG</span>';
-                    var actionBtn = u.status !== 'LOCKED' ? '<button onclick="lockUser(' + u.id + ')" class="btn btn-danger btn-sm">Khóa</button>' : '<button onclick="unlockUser(' + u.id + ')" class="btn btn-success btn-sm">Mở khóa</button>';
+                    var actionBtn = '<div style="display:flex;gap:4px;">' + (u.status !== 'LOCKED' ? '<button onclick="lockUser(' + u.id + ')" class="btn btn-danger btn-sm">Khóa</button>' : '<button onclick="unlockUser(' + u.id + ')" class="btn btn-success btn-sm">Mở khóa</button>') + '<button onclick="resetPin(' + u.id + ')" class="btn btn-warning btn-sm">🔑 Reset PIN</button></div>';
                     row.innerHTML = '<td style="color:var(--text-muted);font-size:0.85rem;">' + u.id + '</td><td style="font-weight:600;">' + u.username + '</td><td>' + u.fullName + '</td><td style="color:var(--text-muted);">' + u.email + '</td><td>' + roleBadge + '</td><td>' + statusBadge + '</td><td>' + actionBtn + '</td>';
                 });
             } else { body.innerHTML = '<tr><td colspan="7" class="empty">Không có người dùng</td></tr>'; }
@@ -80,6 +80,7 @@
 
         function lockUser(id) { if (confirm('Khóa người dùng này?')) { fetch('/api/admin/users/' + id + '/lock', { method: 'POST', credentials: 'include' }).then(function(r) { if (r.ok) location.reload(); }); } }
         function unlockUser(id) { if (confirm('Mở khóa người dùng này?')) { fetch('/api/admin/users/' + id + '/unlock', { method: 'POST', credentials: 'include' }).then(function(r) { if (r.ok) location.reload(); }); } }
+        function resetPin(id) { if (confirm('Reset mã PIN của người dùng này về 000000?')) { fetch('/api/admin/users/' + id + '/reset-pin', { method: 'POST', credentials: 'include' }).then(function(r) { if (r.ok) { showToast('Đã reset PIN về 000000', 'success'); location.reload(); } else { showToast('Lỗi', 'error'); } }); } }
 
         function openTxModal(accountId, mode) {
             var title = mode === 'deposit' ? 'Nạp tiền' : 'Rút tiền';

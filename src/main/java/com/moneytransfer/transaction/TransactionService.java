@@ -173,7 +173,7 @@ public class TransactionService {
     }
 
     public List<Transaction> getHistoryBetween(Long accountId, LocalDateTime from, LocalDateTime to) {
-        return transactionRepository.findByFromAccountIdOrToAccountIdAndCreatedAtBetween(accountId, accountId, from, to);
+        return transactionRepository.findByAccountIdAndCreatedAtBetween(accountId, from, to);
     }
 
     public Optional<Transaction> findById(Long id) {

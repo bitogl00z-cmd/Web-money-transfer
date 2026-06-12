@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="fragments/layout :: head('Đăng nhập')"></head>
-<body style="background:linear-gradient(135deg, var(--primary-dark), var(--primary));min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
-    <div style="background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:40px;max-width:420px;width:100%;">
+<body style="background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card);border-radius:var(--radius);border:1px solid var(--border-light);box-shadow:var(--shadow-lg);padding:40px;max-width:420px;width:100%;">
         <div style="text-align:center;margin-bottom:32px;">
             <div style="font-size:3rem;margin-bottom:8px;">🏦</div>
             <h1 style="font-size:1.5rem;font-weight:700;color:var(--text);">Ngân Hàng</h1>
             <p style="color:var(--text-muted);font-size:0.9rem;margin-top:4px;">Đăng nhập để tiếp tục</p>
         </div>
-        <div id="errorMsg" style="display:none;background:#fce4ec;color:var(--danger);padding:12px 16px;border-radius:var(--radius-sm);font-size:0.85rem;margin-bottom:16px;"></div>
+        <div id="errorMsg" style="display:none;background:rgba(239,68,68,0.15);color:#f87171;padding:12px 16px;border-radius:var(--radius-sm);font-size:0.85rem;margin-bottom:16px;"></div>
         <form id="loginForm">
             <div class="form-group">
                 <label class="form-label">Tên đăng nhập</label>
@@ -19,11 +19,10 @@
                 <input type="password" id="password" class="form-input" placeholder="••••••••" required>
             </div>
             <button type="submit" id="loginBtn" class="btn btn-primary btn-lg btn-full">Đăng nhập</button>
+            <div style="text-align:center;margin-top:16px;">
+                <button type="button" id="faceLoginBtn" class="btn btn-outline btn-lg btn-full">📸 Đăng nhập bằng gương mặt</button>
+            </div>
         </form>
-        <div style="text-align:center;margin:20px 0;color:var(--text-muted);font-size:0.85rem;">— hoặc —</div>
-        <button id="faceLoginBtn" class="btn btn-outline btn-lg btn-full" onclick="faceLogin()">
-            📸 Đăng nhập bằng gương mặt
-        </button>
         <p style="text-align:center;margin-top:24px;font-size:0.85rem;color:var(--text-muted);">
             Chưa có tài khoản? <a href="/register" style="color:var(--primary);font-weight:600;text-decoration:none;">Đăng ký</a>
         </p>
@@ -45,19 +44,22 @@
             btn.disabled = false; btn.textContent = 'Đăng nhập';
         });
 
-        async function faceLogin() {
-            openCamera(async function(base64) {
-                var btn = document.getElementById('faceLoginBtn');
+        document.getElementById('faceLoginBtn').addEventListener('click', function() {
+            openCamera(function(base64) {
+                if (!base64) return;
+                var btn = document.getElementById('loginBtn');
                 btn.disabled = true; btn.textContent = 'Đang xác thực...';
-                var res = await apiFetch('/api/auth/face-quick-login', {
-                    method: 'POST',
-                    body: { faceImage: base64 }
+                apiFetch('/api/auth/face-quick-login', { method: 'POST', body: { faceImage: base64 } }).then(function(res) {
+                    if (res.ok) { window.location.href = '/dashboard'; }
+                    else {
+                        var err = document.getElementById('errorMsg');
+                        err.textContent = res.data.error || 'Xác thực gương mặt thất bại';
+                        err.style.display = 'block';
+                    }
+                    btn.disabled = false; btn.textContent = 'Đăng nhập';
                 });
-                if (res.ok) { window.location.href = '/dashboard'; }
-                else { showToast(res.data.error || 'Xác thực thất bại', 'error'); }
-                btn.disabled = false; btn.textContent = '📸 Đăng nhập bằng gương mặt';
             });
-        }
+        });
     </script>
 </body>
 </html>

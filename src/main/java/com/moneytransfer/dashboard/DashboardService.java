@@ -34,8 +34,8 @@ public class DashboardService {
         List<Transaction> recentTransactions = new ArrayList<>();
         for (Long accId : accountIds) {
             recentTransactions.addAll(
-                    transactionRepository.findByFromAccountIdOrToAccountIdAndCreatedAtBetween(
-                            accId, accId, LocalDateTime.now().minusDays(7), LocalDateTime.now()));
+                    transactionRepository.findByAccountIdAndCreatedAtBetween(
+                            accId, LocalDateTime.now().minusDays(7), LocalDateTime.now()));
         }
         recentTransactions.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
         if (recentTransactions.size() > 10) {
@@ -43,26 +43,49 @@ public class DashboardService {
         }
 
         List<Map<String, Object>> chartData = new ArrayList<>();
+        List<LocalDate> dates = new ArrayList<>();
+        List<BigDecimal> dailyNets = new ArrayList<>();
+        List<BigDecimal> dailyIncomes = new ArrayList<>();
+        List<BigDecimal> dailyExpenses = new ArrayList<>();
         for (int i = 6; i >= 0; i--) {
             LocalDate date = LocalDate.now().minusDays(i);
             LocalDateTime start = date.atStartOfDay();
             LocalDateTime end = date.atTime(LocalTime.MAX);
-            BigDecimal dayTotal = BigDecimal.ZERO;
+            BigDecimal dayIncome = BigDecimal.ZERO;
+            BigDecimal dayExpense = BigDecimal.ZERO;
             for (Long accId : accountIds) {
                 List<Transaction> dayTxs = transactionRepository
-                        .findByFromAccountIdOrToAccountIdAndCreatedAtBetween(accId, accId, start, end);
+                        .findByAccountIdAndCreatedAtBetween(accId, start, end);
                 for (Transaction tx : dayTxs) {
-                    if (tx.getType() == com.moneytransfer.transaction.TransactionType.WITHDRAW ||
-                        tx.getType() == com.moneytransfer.transaction.TransactionType.TRANSFER) {
-                        dayTotal = dayTotal.subtract(tx.getAmount());
-                    } else {
-                        dayTotal = dayTotal.add(tx.getAmount());
+                    boolean isOutgoing = accId.equals(tx.getFromAccountId());
+                    if (isOutgoing && (tx.getType() == com.moneytransfer.transaction.TransactionType.WITHDRAW ||
+                                       tx.getType() == com.moneytransfer.transaction.TransactionType.TRANSFER)) {
+                        dayExpense = dayExpense.add(tx.getAmount());
+                    } else if (!isOutgoing) {
+                        dayIncome = dayIncome.add(tx.getAmount());
                     }
                 }
             }
+            dates.add(date);
+            dailyIncomes.add(dayIncome);
+            dailyExpenses.add(dayExpense);
+            dailyNets.add(dayIncome.subtract(dayExpense));
+        }
+
+        BigDecimal runningBalance = totalBalance;
+        BigDecimal[] balances = new BigDecimal[dailyNets.size()];
+        for (int i = dailyNets.size() - 1; i >= 0; i--) {
+            balances[i] = runningBalance;
+            runningBalance = runningBalance.subtract(dailyNets.get(i));
+        }
+
+        for (int i = 0; i < dates.size(); i++) {
             Map<String, Object> point = new HashMap<>();
-            point.put("date", date.toString());
-            point.put("net", dayTotal);
+            point.put("date", dates.get(i).toString());
+            point.put("balance", balances[i]);
+            point.put("net", dailyNets.get(i));
+            point.put("income", dailyIncomes.get(i));
+            point.put("expense", dailyExpenses.get(i));
             chartData.add(point);
         }
 

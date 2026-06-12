@@ -71,9 +71,10 @@ class IntentClassifier:
     def _regex_fallback(self, text):
         tl = text.lower()
         # Transfer: action verb + number
-        if re.search(r'(?:chuy[êe]?n|g[uui]i|chuy[êe]?n\s+kho[aa]?n)\s', tl, re.IGNORECASE) and re.search(r'\d+', tl):
+        if re.search(r'(?:chuy[êe]?n|g[uui]i|chuy[êe]?n\s+kho[aa]?n)\s', tl, re.IGNORECASE):
             entities = self._extract_entities(text, "transfer")
-            return {"intent": "transfer", "confidence": 0.5, "entities": entities}
+            if entities.get("amount") or entities.get("target"):
+                return {"intent": "transfer", "confidence": 0.5, "entities": entities}
         # Balance keywords
         if re.search(r'(?:s[ôo]? d[ưu]|c[òo]n bao nhi[êe]?u|ki[êe]?m tra t[aà]i kho[aà]?n|xem ti[êe]?n|sao k[êe]?)', tl, re.IGNORECASE):
             return {"intent": "balance", "confidence": 0.5, "entities": {}}
@@ -123,36 +124,65 @@ class IntentClassifier:
 
     def _extract_entities(self, text, intent):
         entities = {}
-        for entity, patterns in self.entity_patterns.items():
-            for p in patterns:
-                m = re.search(p, text, re.IGNORECASE)
-                if m:
-                    val = m.group(1)
-                    if entity == "amount":
-                        val = self._parse_amount(val, text)
-                    entities[entity] = val
+        tl = text.lower()
+        # === Extract AMOUNT: find any number with optional unit ===
+        amount_match = re.search(
+            r'(\d+[\.,]?\d*)\s*(k|ng[aà]?n|ngh[iì]?n|tri[eệ]u|tr|t[ỷi]?)\b|(\d{4,})',
+            tl, re.IGNORECASE
+        )
+        if amount_match:
+            val = amount_match.group(1) or amount_match.group(3)
+            unit = (amount_match.group(2) or "").lower()
+            if unit:
+                entities["amount"] = self._parse_amount(val, text, unit)
+            else:
+                entities["amount"] = self._parse_amount(val, text, "")
+        # === Extract TARGET: find username-like word ===
+        # Pattern 1: after cho/den/den/tai khoan
+        prep_match = re.search(
+            r'(?:cho|đến|den|t[aà]i kho[aà]?n|t[êe]?n|username)\s+([a-zA-Z0-9_]+(?:\s+[a-zA-Z0-9_]+)*)',
+            tl, re.IGNORECASE
+        )
+        if prep_match:
+            target = prep_match.group(1).strip()
+            if re.search(r'\d', target):  # has digit → likely username
+                entities["target"] = target
+            elif "target" not in entities and target:
+                entities["target"] = target
+        # Pattern 2: between action verb and amount (no preposition)
+        if intent == "transfer" and "target" not in entities and "amount" in entities:
+            action = re.search(r'(?:chuy[êe]?n|g[ưu]i)\s+(?:kho[aà]?n\s+)?(?:b[aạ]?n\s+)?(.+?)\s+\d', tl, re.IGNORECASE)
+            if action:
+                possible = action.group(1).strip()
+                if re.search(r'[a-zA-Z]', possible) and possible != 'tiền':
+                    # Take last word that has letters
+                    words = [w for w in possible.split() if re.search(r'[a-zA-Z]', w)]
+                    if words:
+                        entities["target"] = words[-1]
+        # Pattern 3: last alphanumeric word in the text (for transfer)
+        if intent == "transfer" and "target" not in entities:
+            words = re.findall(r'[a-zA-Z]\w+', tl)
+            # Exclude amount-related words, take the last one
+            skip = {'k', 'ngàn', 'nghìn', 'triệu', 'tr', 'tỷ', 'chuyển', 'gửi', 'khoản', 'bạn', 'cho', 'đến', 'tiền'}
+            for w in reversed(words):
+                if w not in skip and len(w) >= 2:
+                    entities["target"] = w
                     break
-        if intent == "transfer":
-            # Smarter target: look for word(s) between action verb and amount
-            m = re.search(r'(?:chuy[êe]?n|g[ưu]i|chuy[êe]?n\s+kho[aà]?n)\s+(?:cho\s+)?(.+)\s+(?:\d+[\s.]|\d{2,})', text, re.IGNORECASE)
-            if m:
-                target = m.group(1).strip()
-                if not re.match(r'^\d', target) and (len(target.split()) > 1 or "target" not in entities):
-                    entities["target"] = target
         return entities
 
-    def _parse_amount(self, val, text):
+    def _parse_amount(self, val, text, unit=""):
         multipliers = {"k": 1000, "ngàn": 1000, "nghìn": 1000, "triệu": 1000000, "tr": 1000000, "tỷ": 1000000000}
-        text_lower = text.lower()
-        for word, mul in multipliers.items():
-            if word in text_lower:
-                try:
-                    num = float(val.replace(".", ""))
-                    return int(num * mul)
-                except:
-                    pass
+        if not unit:
+            # auto-detect from text
+            text_lower = text.lower()
+            for word, mul in multipliers.items():
+                if word in text_lower:
+                    unit = word
+                    break
+        mul = multipliers.get(unit, 1)
         try:
-            return int(val.replace(".", ""))
+            num = float(val.replace(".", "").replace(",", ""))
+            return int(num * mul)
         except:
             return 0
 

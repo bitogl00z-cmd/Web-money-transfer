@@ -41,7 +41,7 @@ public class ExportService {
         LocalDateTime fromDt = from.atStartOfDay();
         LocalDateTime toDt = to.atTime(LocalTime.MAX);
         List<Transaction> transactions = transactionRepository
-                .findByFromAccountIdOrToAccountIdAndCreatedAtBetween(accountId, accountId, fromDt, toDt);
+                .findByAccountIdAndCreatedAtBetween(accountId, fromDt, toDt);
 
         Document document = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -80,7 +80,7 @@ public class ExportService {
         LocalDateTime fromDt = from.atStartOfDay();
         LocalDateTime toDt = to.atTime(LocalTime.MAX);
         List<Transaction> transactions = transactionRepository
-                .findByFromAccountIdOrToAccountIdAndCreatedAtBetween(accountId, accountId, fromDt, toDt);
+                .findByAccountIdAndCreatedAtBetween(accountId, fromDt, toDt);
 
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Statement");

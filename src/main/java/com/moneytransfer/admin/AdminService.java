@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class AdminService {
@@ -30,15 +31,17 @@ public class AdminService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final TransactionService transactionService;
+    private final PasswordEncoder passwordEncoder;
 
     public AdminService(UserRepository userRepository, AuditLogRepository auditLogRepository,
                         TransactionRepository transactionRepository, AccountRepository accountRepository,
-                        TransactionService transactionService) {
+                        TransactionService transactionService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.auditLogRepository = auditLogRepository;
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.transactionService = transactionService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Page<UserDto> getUsers(Pageable pageable) {
@@ -104,5 +107,13 @@ public class AdminService {
     @Transactional
     public Transaction withdraw(Long accountId, BigDecimal amount, String description, Long adminUserId, String ip) {
         return transactionService.withdraw(accountId, amount, description, adminUserId, ip);
+    }
+
+    @Transactional
+    public void resetPin(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        user.setPinHash(passwordEncoder.encode("000000"));
+        user.setPinSet(true);
+        userRepository.save(user);
     }
 }

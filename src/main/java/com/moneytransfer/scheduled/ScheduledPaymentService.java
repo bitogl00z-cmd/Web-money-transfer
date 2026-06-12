@@ -8,6 +8,7 @@ import com.moneytransfer.transaction.TransactionRepository;
 import com.moneytransfer.transaction.TransactionType;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -61,53 +62,67 @@ public class ScheduledPaymentService {
         scheduledPaymentRepository.save(payment);
     }
 
-    @Transactional
-    public void processDuePayments() {
+    public synchronized void processDuePayments() {
         List<ScheduledPayment> due = scheduledPaymentRepository
                 .findByStatusAndNextRunLessThanEqual(PaymentStatus.ACTIVE, LocalDateTime.now());
         for (ScheduledPayment payment : due) {
-            try {
-                processPayment(payment);
-                if (payment.getFrequency() == PaymentFrequency.ONE_TIME) {
-                    payment.setStatus(PaymentStatus.COMPLETED);
-                } else {
-                    LocalDateTime next = computeNextRun(payment);
-                    if (payment.getEndDate() != null && next.isAfter(payment.getEndDate())) {
-                        payment.setStatus(PaymentStatus.COMPLETED);
-                    } else {
-                        payment.setNextRun(next);
-                    }
-                }
-            } catch (InsufficientBalanceException e) {
-                payment.setStatus(PaymentStatus.CANCELLED);
-                notifyFailure(payment, "Số dư không đủ để thực hiện thanh toán định kỳ");
-            } catch (Exception e) {
-                payment.setStatus(PaymentStatus.PAUSED);
-                notifyFailure(payment, "Lỗi không xác định khi xử lý thanh toán định kỳ");
-            }
-            scheduledPaymentRepository.save(payment);
+            processSinglePayment(payment.getId());
         }
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void processSinglePayment(Long paymentId) {
+        ScheduledPayment payment = scheduledPaymentRepository.findById(paymentId).orElse(null);
+        if (payment == null || payment.getStatus() != PaymentStatus.ACTIVE) return;
+        try {
+            processPayment(payment);
+            if (payment.getFrequency() == PaymentFrequency.ONE_TIME) {
+                payment.setStatus(PaymentStatus.COMPLETED);
+            } else {
+                LocalDateTime next = computeNextRun(payment);
+                if (payment.getEndDate() != null && next.isAfter(payment.getEndDate())) {
+                    payment.setStatus(PaymentStatus.COMPLETED);
+                } else {
+                    payment.setNextRun(next);
+                }
+            }
+        } catch (InsufficientBalanceException e) {
+            payment.setStatus(PaymentStatus.CANCELLED);
+            notifyFailure(payment, "Số dư không đủ để thực hiện thanh toán định kỳ");
+        } catch (Exception e) {
+            payment.setStatus(PaymentStatus.PAUSED);
+            notifyFailure(payment, "Lỗi không xác định khi xử lý thanh toán định kỳ");
+        }
+        scheduledPaymentRepository.save(payment);
+    }
+
     private void processPayment(ScheduledPayment payment) {
-        Account from = accountRepository.findByAccountNumber(
+        Account recipient = accountRepository.findByAccountNumber(
                 payment.getToAccountNumber()).orElse(null);
-        if (from == null) {
+        if (recipient == null) {
             throw new IllegalArgumentException("Recipient account not found: " + payment.getToAccountNumber());
         }
         Account senderAccount = accountRepository.findByIdWithLock(payment.getFromAccountId())
                 .orElseThrow();
+        Account recipientLocked = accountRepository.findByIdWithLock(recipient.getId())
+                .orElseThrow();
         accountService.verifyChecksum(senderAccount);
+        accountService.verifyChecksum(recipientLocked);
         if (senderAccount.getBalance().compareTo(payment.getAmount()) < 0) {
             throw new InsufficientBalanceException("Insufficient balance");
         }
         senderAccount.setBalance(senderAccount.getBalance().subtract(payment.getAmount()));
         senderAccount.setBalanceChecksum(accountService.computeChecksum(senderAccount));
         accountRepository.save(senderAccount);
+
+        recipientLocked.setBalance(recipientLocked.getBalance().add(payment.getAmount()));
+        recipientLocked.setBalanceChecksum(accountService.computeChecksum(recipientLocked));
+        accountRepository.save(recipientLocked);
+
         String txCode = "TX" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
                 + String.format("%06d", new Random().nextInt(999999));
-        transactionRepository.save(new Transaction(txCode, payment.getFromAccountId(), from.getId(),
-                payment.getAmount(), senderAccount.getBalance(), null, TransactionType.RECURRING,
+        transactionRepository.save(new Transaction(txCode, payment.getFromAccountId(), recipientLocked.getId(),
+                payment.getAmount(), senderAccount.getBalance(), recipientLocked.getBalance(), TransactionType.RECURRING,
                 payment.getDescription()));
 
         String formattedAmount = NumberFormat.getNumberInstance(Locale.of("vi", "VN")).format(payment.getAmount()) + "đ";

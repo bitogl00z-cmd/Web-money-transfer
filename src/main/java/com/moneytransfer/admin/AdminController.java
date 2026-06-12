@@ -43,6 +43,12 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("message", "User unlocked"));
     }
 
+    @PostMapping("/users/{id}/reset-pin")
+    public ResponseEntity<?> resetPin(@PathVariable Long id) {
+        adminService.resetPin(id);
+        return ResponseEntity.ok(Map.of("message", "PIN đã được reset về 000000"));
+    }
+
     @GetMapping("/transactions")
     public Page<AdminTransactionDto> getTransactions(@RequestParam(defaultValue = "0") int page,
                                                       @RequestParam(defaultValue = "20") int size) {

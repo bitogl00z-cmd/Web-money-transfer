@@ -29,10 +29,20 @@ public class FaceService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         try {
             byte[] imageBytes = Base64.getDecoder().decode(base64Image);
+            // Check if this face already belongs to another user
+            if (javaCVFaceEngine.isReady()) {
+                javaCVFaceEngine.identifyFace(imageBytes).ifPresent(existingId -> {
+                    if (!existingId.equals(userId)) {
+                        throw new RuntimeException("Khuôn mặt này đã được đăng ký bởi người dùng khác");
+                    }
+                });
+            }
             javaCVFaceEngine.registerFace(userId, imageBytes);
             user.setFaceEnabled(true);
             userRepository.save(user);
             return "Face registered successfully";
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Face registration failed: " + e.getMessage());
         }

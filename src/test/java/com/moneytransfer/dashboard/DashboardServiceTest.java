@@ -53,10 +53,10 @@ class DashboardServiceTest {
         todayWithdrawal.setType(TransactionType.WITHDRAW);
         todayWithdrawal.setCreatedAt(LocalDate.now().atTime(12, 0));
 
-        when(transactionRepository.findByFromAccountIdOrToAccountIdAndCreatedAtBetween(eq(1L), eq(1L), any(), any()))
+        when(transactionRepository.findByAccountIdAndCreatedAtBetween(eq(1L), any(), any()))
                 .thenAnswer(invocation -> {
-                    LocalDateTime start = invocation.getArgument(2);
-                    LocalDateTime end = invocation.getArgument(3);
+                    LocalDateTime start = invocation.getArgument(1);
+                    LocalDateTime end = invocation.getArgument(2);
                     LocalDateTime txTime = todayWithdrawal.getCreatedAt();
                     if (!txTime.isBefore(start) && !txTime.isAfter(end)) {
                         return List.of(todayWithdrawal);

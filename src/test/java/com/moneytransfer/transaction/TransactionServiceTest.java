@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -24,13 +25,14 @@ class TransactionServiceTest {
     @Mock private TransactionRepository transactionRepository;
     @Mock private AccountService accountService;
     @Mock private AuditLogRepository auditLogRepository;
+    @Mock private SimpMessagingTemplate messagingTemplate;
 
     private TransactionService transactionService;
 
     @BeforeEach
     void setUp() {
         transactionService = new TransactionService(accountRepository, transactionRepository,
-                accountService, auditLogRepository);
+                accountService, auditLogRepository, messagingTemplate);
     }
 
     @Test
