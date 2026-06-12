@@ -1,0 +1,2 @@
+# Paste Gemini API key here (xem hướng dẫn bên dưới)
+# Vào https://aistudio.google.com/apikey -> Tạo API key -> Copy dán xuống dòng dưới:

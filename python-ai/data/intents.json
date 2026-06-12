@@ -17,7 +17,17 @@
         "chuyển 1.2 triệu đến user9",
         "chuyển 5 trăm cho user10",
         "gửi 2 triệu rưỡi cho user11",
-        "chuyển 4 triệu đến tài khoản 67890"
+        "chuyển 4 triệu đến tài khoản 67890",
+        "chuyển user2 500k",
+        "chuyển user3 200 nghìn",
+        "chuyển user1 1 triệu",
+        "chuyển user4 300k",
+        "chuyển Nam 500k",
+        "gửi user2 100k",
+        "gửi user3 2 triệu",
+        "chuyển khoản user4 500 nghìn",
+        "chuyển bạn Hùng 200k",
+        "gửi bạn Lan 1 triệu"
       ],
       "entities": ["amount", "target"]
     },
@@ -120,16 +130,19 @@
   ],
   "entity_patterns": {
     "amount": [
-      "(\\d+[\\.]?\\d*)\\s*(k|ngàn|nghìn|triệu|tr|tỷ)",
+      "(\\d+[\\.]?\\d*)\\s*(k|ng[aà]n|ngh[iì]?n|tri[eệ]u|tr|t[ỷi]?|tri[eệ]?u)",
       "(\\d+[\\.]?\\d*)",
-      "một|hai|ba|bốn|năm|sáu|bảy|tám|chín|mười"
+      "m[ôo]?t|hai|ba|b[ôo]?n|n[aă]m|s[aá]u|b[aả]y|t[á]m|ch[í]?n|m[ưu]?[ơo]?i"
     ],
     "target": [
-      "cho\\s+(\\w+)",
-      "đến\\s+(\\w+)",
-      "tên\\s+(\\w+)",
-      "username\\s+(\\w+)",
-      "tài khoản\\s+(\\w+)"
+      "cho\\s+([^\\d\\s]\\S*(?:\\s+[^\\d\\s]\\S*)*)",
+      "đến\\s+([^\\d\\s]\\S*(?:\\s+[^\\d\\s]\\S*)*)",
+      "t[êe]?n\\s+([^\\d\\s]\\S*)",
+      "username\\s+([^\\d\\s]\\S*)",
+      "t[aà]i kho[aà]?n\\s+([^\\d\\s]\\S*)",
+      "chuy[êe]?n\\s+(?:kho[aà]?n\\s+)?(?:b[aạ]?n\\s+)?([^\\d\\s]\\S*)\\s+",
+      "g[ưu]i\\s+(?:b[aạ]?n\\s+)?([^\\d\\s]\\S*)\\s+",
+      "chuy[êe]?n\\s+(?:kho[aà]?n\\s+)?(?:b[aạ]?n\\s+)?([^\\d\\s]\\S*)$"
     ]
   }
 }

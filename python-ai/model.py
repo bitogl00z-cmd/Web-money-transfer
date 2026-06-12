@@ -1,4 +1,4 @@
-import re, json
+import re, json, os
 from pathlib import Path
 
 MODEL_DIR = Path(__file__).parent / "models"
@@ -9,8 +9,22 @@ class IntentClassifier:
         self.intent_names = []
         self.model = None
         self.tokenizer = None
+        self.gemini = None
         self.entity_patterns = self._load_entity_patterns()
+        self._load_gemini()
         self._load_model()
+
+    def _load_gemini(self):
+        key_file = Path(__file__).parent / "gemini_key.txt"
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key and key_file.exists():
+            api_key = key_file.read_text(encoding="utf-8").strip()
+        if api_key:
+            try:
+                from google import genai
+                self.gemini = genai.Client(api_key=api_key)
+            except Exception:
+                pass
 
     def _load_entity_patterns(self):
         intents_file = DATA_DIR / "intents.json"
@@ -34,7 +48,10 @@ class IntentClassifier:
 
     def predict(self, text):
         if self.model is None:
-            return self._fallback()
+            result = self._regex_fallback(text)
+            if result["intent"] != "fallback":
+                return result
+            return self._gemini_fallback(text)
         import torch
         inputs = self.tokenizer(text, truncation=True, padding=True, max_length=64, return_tensors="pt")
         with torch.no_grad():
@@ -42,13 +59,67 @@ class IntentClassifier:
             probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
             score, idx = torch.max(probs, dim=-1)
         intent = self.intent_names[idx.item()] if idx.item() < len(self.intent_names) else "fallback"
-        if score.item() < 0.3:
-            intent = "fallback"
+        confidence = round(score.item(), 2)
+        if confidence < 0.3:
+            result = self._regex_fallback(text)
+            if result["intent"] != "fallback":
+                return result
+            return self._gemini_fallback(text)
         entities = self._extract_entities(text, intent)
-        return {"intent": intent, "confidence": round(score.item(), 2), "entities": entities}
+        return {"intent": intent, "confidence": confidence, "entities": entities}
+
+    def _regex_fallback(self, text):
+        tl = text.lower()
+        # Transfer: action verb + number
+        if re.search(r'(?:chuy[êe]?n|g[uui]i|chuy[êe]?n\s+kho[aa]?n)\s', tl, re.IGNORECASE) and re.search(r'\d+', tl):
+            entities = self._extract_entities(text, "transfer")
+            return {"intent": "transfer", "confidence": 0.5, "entities": entities}
+        # Balance keywords
+        if re.search(r'(?:s[ôo]? d[ưu]|c[òo]n bao nhi[êe]?u|ki[êe]?m tra t[aà]i kho[aà]?n|xem ti[êe]?n|sao k[êe]?)', tl, re.IGNORECASE):
+            return {"intent": "balance", "confidence": 0.5, "entities": {}}
+        # History keywords
+        if re.search(r'(?:giao d[ịi]?ch|l[ịi]?ch s[ưu]?|sao k[êe]?)', tl, re.IGNORECASE):
+            return {"intent": "history", "confidence": 0.5, "entities": {}}
+        # Greeting
+        if re.search(r'^(?:ch[aà]o|hello|hi|helo|hey|xin ch[aà]o)', tl, re.IGNORECASE):
+            return {"intent": "greeting", "confidence": 0.5, "entities": {}}
+        # Help
+        if re.search(r'(?:gi[úu]p|h[ôo]? tr[ơo]?|h[ưú]?[ơo]?ng d[aã]?n|c[óo]? th[êe]? l[aà]m g[iì]|t[ií]?nh n[aă]?ng)', tl, re.IGNORECASE):
+            return {"intent": "help", "confidence": 0.5, "entities": {}}
+        return self._fallback()
 
     def _fallback(self):
         return {"intent": "fallback", "confidence": 0.0, "entities": {}}
+
+    def _gemini_fallback(self, text):
+        if self.gemini is None:
+            return self._fallback()
+        try:
+            prompt = (
+                'Ban la tro ly ngan hang. Phan loai cau sau thanh 1 trong cac intent: '
+                'transfer, balance, history, greeting, help.\n'
+                'Tra ve JSON thuan (khong markdown, khong giai thich) voi cac field: '
+                'intent (string), target (string hoac null), amount (int hoac 0).\n'
+                'Vi du: {"intent":"transfer","target":"user2","amount":500000}\n'
+                'Cau: "' + text + '"'
+            )
+            response = self.gemini.models.generate_content(
+                model="gemini-2.0-flash", contents=prompt
+            )
+            raw = response.text.strip()
+            raw = raw.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+            data = json.loads(raw)
+            intent = data.get("intent", "fallback")
+            entities = {}
+            target = data.get("target")
+            amount = data.get("amount")
+            if target:
+                entities["target"] = str(target)
+            if amount:
+                entities["amount"] = self._parse_amount(str(amount), text) if not isinstance(amount, int) else amount
+            return {"intent": intent, "confidence": 0.8, "entities": entities}
+        except Exception:
+            return self._fallback()
 
     def _extract_entities(self, text, intent):
         entities = {}
@@ -61,6 +132,13 @@ class IntentClassifier:
                         val = self._parse_amount(val, text)
                     entities[entity] = val
                     break
+        if intent == "transfer":
+            # Smarter target: look for word(s) between action verb and amount
+            m = re.search(r'(?:chuy[êe]?n|g[ưu]i|chuy[êe]?n\s+kho[aà]?n)\s+(?:cho\s+)?(.+)\s+(?:\d+[\s.]|\d{2,})', text, re.IGNORECASE)
+            if m:
+                target = m.group(1).strip()
+                if not re.match(r'^\d', target) and (len(target.split()) > 1 or "target" not in entities):
+                    entities["target"] = target
         return entities
 
     def _parse_amount(self, val, text):
