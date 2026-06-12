@@ -1,4 +1,4 @@
-import re, json, torch, numpy as np
+import re, json
 from pathlib import Path
 
 MODEL_DIR = Path(__file__).parent / "models"
@@ -6,7 +6,7 @@ DATA_DIR = Path(__file__).parent / "data"
 
 class IntentClassifier:
     def __init__(self):
-        self.intent_names = torch.load(str(MODEL_DIR / "intent_names.pt"), map_location="cpu", weights_only=False) if (MODEL_DIR / "intent_names.pt").exists() else []
+        self.intent_names = []
         self.model = None
         self.tokenizer = None
         self.entity_patterns = self._load_entity_patterns()
@@ -16,13 +16,17 @@ class IntentClassifier:
         intents_file = DATA_DIR / "intents.json"
         if not intents_file.exists():
             return {}
-        with open(intents_file) as f:
+        with open(intents_file, encoding="utf-8") as f:
             data = json.load(f)
         return data.get("entity_patterns", {})
 
     def _load_model(self):
         model_path = MODEL_DIR / "phobert-intent"
+        intent_names_file = MODEL_DIR / "intent_names.pt"
         if model_path.exists():
+            import torch
+            if intent_names_file.exists():
+                self.intent_names = torch.load(str(intent_names_file), map_location="cpu", weights_only=False)
             from transformers import AutoTokenizer, AutoModelForSequenceClassification
             self.tokenizer = AutoTokenizer.from_pretrained("vinai/phobert-base")
             self.model = AutoModelForSequenceClassification.from_pretrained(str(model_path))
@@ -31,6 +35,7 @@ class IntentClassifier:
     def predict(self, text):
         if self.model is None:
             return self._fallback()
+        import torch
         inputs = self.tokenizer(text, truncation=True, padding=True, max_length=64, return_tensors="pt")
         with torch.no_grad():
             outputs = self.model(**inputs)
