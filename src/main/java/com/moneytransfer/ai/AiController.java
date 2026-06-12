@@ -36,7 +36,12 @@ public class AiController {
             return ResponseEntity.badRequest().body(Map.of("error", "Vui lòng nhập câu hỏi"));
         }
 
-        Map<String, Object> parsed = aiService.parse(text);
+        Map<String, Object> parsed;
+        try {
+            parsed = aiService.parse(text);
+        } catch (Exception e) {
+            return ResponseEntity.ok(Map.of("message", "Máy chủ AI chưa kết nối. Vui lòng khởi động python-ai (port 5000)."));
+        }
         String intent = (String) parsed.get("intent");
         Map<String, Object> entities = (Map<String, Object>) parsed.get("entities");
 
